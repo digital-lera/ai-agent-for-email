@@ -6,7 +6,7 @@ Operates text data with Saiga-Llama-3 to JSON file
 
 - [ ] IMAP connection with Microsoft Exchange
 
-- [ ] PDF parse to .txt
+- [x] PDF parse to .txt
 
 - [x] Analysis propmpt
 
