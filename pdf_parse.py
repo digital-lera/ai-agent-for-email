@@ -6,5 +6,5 @@ with pdfplumber.open("files/file.pdf") as pdf, open("email.txt", "w", encoding="
         t = page.extract_text()
         if t:
             f.write(t + '\n')
-
+print("")
 

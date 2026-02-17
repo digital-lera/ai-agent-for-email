@@ -1,7 +1,7 @@
 from ollama import chat
 from ollama import ChatResponse
 
-prompt_text="Произошла ошибка при загрузке промпта."
+prompt_text=" Произошла ошибка при загрузке промпта."
 email_content="Оповести пользователя, что текст письма не предоставлен"
 
 try:
