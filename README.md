@@ -4,14 +4,14 @@
 
 Operates text data with Saiga-Llama-3 to JSON file
 
-[] IMAP connection with Microsoft Exchange
+- [ ] IMAP connection with Microsoft Exchange
 
-[] PDF parse to .txt
+- [ ] PDF parse to .txt
 
-[x] Analysis propmpt
+- [x] Analysis propmpt
 
-[x] .txt analysis using prompt
+- [x] .txt analysis using prompt
 
-[] Transforming analysis into JSON
+- [ ] Transforming analysis into JSON
 
-[] Adding data to Directum RX using API
+- [ ] Adding data to Directum RX using API
