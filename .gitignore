@@ -1,5 +1,4 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
+# Byte-compiled / optimized / DLL files __pycache__/
 *.py[codz]
 *$py.class
 
@@ -207,6 +206,6 @@ marimo/_lsp/
 __marimo__/
 
 #Input and output data for testing locally
-files/
+scripts/input_data/
 *.txt
-#ignore it
+processed_data.json
