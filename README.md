@@ -12,6 +12,6 @@ Operates text data with Saiga-Llama-3 to JSON file
 
 - [x] .txt analysis using prompt
 
-- [ ] Transforming analysis into JSON
+- [x] Transforming analysis into JSON
 
 - [ ] Adding data to Directum RX using API
