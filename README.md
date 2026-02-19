@@ -4,7 +4,7 @@
 
 Operates text data with Saiga-Llama-3 to JSON file
 
-- [ ] IMAP connection with Microsoft Exchange
+- [x] IMAP connection with Microsoft Exchange
 
 - [x] PDF parse to .txt
 
@@ -14,4 +14,4 @@ Operates text data with Saiga-Llama-3 to JSON file
 
 - [x] Transforming analysis into JSON
 
-- [ ] Adding data to Directum RX using API
+- [x] Adding data to Directum RX using RPA
