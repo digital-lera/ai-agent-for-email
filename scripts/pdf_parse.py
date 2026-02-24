@@ -1,10 +1,17 @@
-import pdfplumber
+from pdf2image import convert_from_path
+import pytesseract
+from PIL import Image
 
-with pdfplumber.open("input_data/file.pdf") as pdf, open("input_data/email.txt", "w", encoding="utf-8") as f:
+images = convert_from_path("scripts/input_data/file.pdf")
 
-    for page in pdf.pages:
-        t = page.extract_text()
-        if t:
-            f.write(t + '\n')
-print("")
+text = ""
 
+for index, image in enumerate(images):
+    image_path = "scripts/input_data/file.png"
+    image.save(image_path, 'PNG')
+
+        
+    text += pytesseract.image_to_string(Image.open(image_path), lang='rus', config=r'--oem 3 --psm 6')
+
+with open("email.txt", "w") as file:
+    file.write(text)
