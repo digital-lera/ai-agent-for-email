@@ -1,17 +1,31 @@
 from pdf2image import convert_from_path
-import pytesseract
 from PIL import Image
+from paddleocr import PaddleOCR
 
 images = convert_from_path("scripts/input_data/file.pdf")
 
+ocr = PaddleOCR(
+        lang='ru',
+        use_doc_orientation_classify=False,
+        use_doc_unwarping=False,
+        use_textline_orientation=False
+        )
+
 text = ""
+rec_texts = []
 
 for index, image in enumerate(images):
     image_path = "scripts/input_data/file.png"
     image.save(image_path, 'PNG')
+    
+    result = ocr.predict(image_path)
 
-        
-    text += pytesseract.image_to_string(Image.open(image_path), lang='rus', config=r'--oem 3 --psm 6')
+    if isinstance(result, list) and len(result) > 0:
+        rec_texts = result[0].get("rec_texts", [])
+    elif isinstance(result, dict):
+        rec_texts = result.get("rec_texts", [])
+    else:
+        rec_texts = []
 
-with open("email.txt", "w") as file:
-    file.write(text)
+with open("scripts/input_data/email.txt", "w") as file:
+    file.write('\n'.join(rec_texts))
