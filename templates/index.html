@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>ТАИФ - Обработка входящих писем</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/spcss@0.9.0">
+    <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  </head>
+  <body>
+    <header>
+      <h1>Агент по обработке входящих писем</h1>
+
+      <span><i>Адрес для получения входящей почты: </i></span>
+      <a href="mailto:StryginaVM@taif.ru">StryginaVM@taif.ru</a>
+      <div class="update-options">
+        <ul class="update-options_list">
+          <li class="update-options_list_item">
+            <button id="startBtn">Запустить мониторинг</button>
+            <button id="stopBtn">Остановить</button>
+        <div id="status">Остановлен</div>
+          </li>
+          <li class="update-options_list_item hidden">
+            <label for="update-interval">
+                Интервал обновления почтового ящика (минуты)
+            </label>
+            <input type="number" id="update-interval" min="1" max=1>
+          </li>
+          <li class="update-options_list_item hidden">
+            <label for="update-now-button">
+                Обновить сейчас
+            </label>
+            <input type="button" id="update-now-button">
+          </li>
+        <ul>
+      <div>
+    </header>
+
+      <main>
+        <div>
+            <h2>Последнее входящее письмо с документом</h2>
+
+            <span><i>От кого: </i><a href="mailto:example@example.com">example@example.com</a></span>
+            <br>
+            <span><i>Тема: </i>Тема письма текст</span>
+
+        </div>
+
+        <div>
+          <span><i>Прикрепленные документы: </i></span>
+          <ul class="document_list">
+            <li class="document_list_element">
+              example_document.pdf
+            </li>  
+          </ul>
+        </div>
+
+        <div>
+          <div id="chain">
+            <h3>Цепочка выполнения:</h3>
+            <div id="chainStages"></div>
+          </div>
+
+          <ol class="steps-list">
+              <li class="steps_list_element">
+                  <p>Считывание текста письма</p><a href="#"><i>Посмотреть текст</i></a>
+              </li>
+              <li class="steps_list_element">
+                  <p>Выделение необходимых данных из текста</p><a href="#"><i>Посмотреть полученные данные</i></a>
+              </li>
+              <li class="steps_list_element">
+                  <p>Создание входящего письма в Directum RX</p><a href="#"><i>Ссылка на итоговое входящее письмо</i></a>
+              </li>
+          </ol>
+        </div>
+    
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        const socket = io();
+        
+        document.getElementById('startBtn').onclick = () => {
+            fetch('/start_monitor');
+        };
+        
+        document.getElementById('stopBtn').onclick = () => {
+            fetch('/stop_monitor');
+        };
+        
+        socket.on('monitor_started', () => {
+            document.getElementById('status').innerHTML = '✅ Мониторинг активен (каждые 5 мин)';
+        });
+        
+        socket.on('new_email', data => {
+            document.getElementById('status').innerHTML += `<br>📧 Новое письмо: ${data.subject}`;
+        });
+        
+        socket.on('chain_update', data => {
+            document.getElementById('chainStages').innerHTML = `
+                <p><strong>${data.stage}</strong>: ${data.status}</p>
+                <pre>${data.log || ''}</pre>
+            `;
+        });
+    </script>
+      </main>
+
+      <footer>
+
+      </footer>
+
+  </body>
+</html>

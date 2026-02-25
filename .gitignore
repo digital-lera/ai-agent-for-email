@@ -207,7 +207,8 @@ __marimo__/
 
 #Input and output data for testing locally
 **.xml
-**.html
+**/log.html
+**/report.html
 scripts/input_data/
 *.txt
 processed_data.json
