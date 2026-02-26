@@ -2,7 +2,12 @@ from pdf2image import convert_from_path
 from PIL import Image
 from paddleocr import PaddleOCR
 
-images = convert_from_path("scripts/input_data/file.pdf")
+filename = 'file.pdf'
+
+with open('scripts/filename.txt', 'r') as file:
+    filename = file.read()
+
+images = convert_from_path(f"scripts/input_data/{filename}")
 
 ocr = PaddleOCR(
         lang='ru',

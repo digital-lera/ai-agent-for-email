@@ -211,5 +211,5 @@ __marimo__/
 **/report.html
 scripts/input_data/
 *.txt
-processed_data.json
+**.json
 
