@@ -5,7 +5,7 @@ prompt_text=" Произошла ошибка при загрузке промп
 email_content="Оповести пользователя, что текст письма не предоставлен"
 
 try:
-    with open("scripts/prompts/prompt_for_preprocessing.txt", 'r', encoding='utf-8') as prompt:
+    with open("prompts/prompt_for_preprocessing.txt", 'r', encoding='utf-8') as prompt:
         prompt_text = prompt.read()
 except FileNotFoundError:
     print("Error: prompt text was not provided.")
@@ -13,7 +13,7 @@ except Exception as e:
     print(f"An error occured: {e}")
 
 try:
-    with open("scripts/input_data/email.txt", 'r', encoding='utf-8') as email:
+    with open("input_data/email.txt", 'r', encoding='utf-8') as email:
         email_content = email.read()
 except FileNotFoundError:
     print("Error: file with text output of the email was not provided.")
@@ -31,7 +31,7 @@ response: ChatResponse = chat(model='akdengi/saiga-llama3-8b', messages=[
     ])
 
 try:
-    with open("scripts/prompts/prompt_for_json.txt", 'r', encoding='utf-8') as prompt:
+    with open("prompts/prompt_for_json.txt", 'r', encoding='utf-8') as prompt:
         prompt_text = prompt.read()
 except FileNotFoundError:
     print("Error: prompt for json text was not provided.")
@@ -48,6 +48,6 @@ response_with_json: ChatResponse = chat(model='akdengi/saiga-llama3-8b', message
     ])
 
 
-with open("scripts/processed_data.json","w") as data:
+with open("processed_data.json","w") as data:
     data.write(response_with_json['message']['content'])
 

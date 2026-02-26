@@ -4,10 +4,15 @@ from paddleocr import PaddleOCR
 
 filename = 'file.pdf'
 
-with open('scripts/filename.txt', 'r') as file:
+with open('filename.txt', 'r') as file:
     filename = file.read()
 
-images = convert_from_path(f"scripts/input_data/{filename}")
+images = convert_from_path(f"input_data/{filename}")
+
+if not(images):
+    print("images_were_not_found")
+
+print(f"{filename} is read")
 
 ocr = PaddleOCR(
         lang='ru',
@@ -20,7 +25,7 @@ text = ""
 rec_texts = []
 
 for index, image in enumerate(images):
-    image_path = "scripts/input_data/file.png"
+    image_path = "input_data/file.png"
     image.save(image_path, 'PNG')
     
     result = ocr.predict(image_path)
@@ -32,5 +37,7 @@ for index, image in enumerate(images):
     else:
         rec_texts = []
 
-with open("scripts/input_data/email.txt", "w") as file:
+    print("text recognized")
+
+with open("input_data/email.txt", "w") as file:
     file.write('\n'.join(rec_texts))
