@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>ТАИФ - Обработка входящих писем</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/spcss@0.9.0">
+    <link rel="stylesheet" href="{{ url_for('static',filename='styles/style.css') }}">
     <link rel="icon" href="./favicon.ico" type="image/x-icon">
   </head>
   <body>
     <header>
-      <h1>Агент по обработке входящих писем</h1>
+      <h1>AI-агент по обработке входящих писем АО "ТАИФ"</h1>
 
       <span><i>Адрес для получения входящей почты: </i></span>
       <a href="mailto:StryginaVM@taif.ru">StryginaVM@taif.ru</a>
@@ -18,60 +18,28 @@
         <ul class="update-options_list">
           <li class="update-options_list_item">
             <button id="startBtn">Запустить мониторинг</button>
-            <button id="stopBtn">Остановить</button>
-        <div id="status">Остановлен</div>
+            <button id="stopBtn" class="hidden">Остановить</button>
           </li>
-          <li class="update-options_list_item">
-            <label for="update-interval">
-                Интервал обновления почтового ящика (минуты)
-            </label>
-            <input type="number" id="update-interval" min="1" max=1>
-          </li>
-          <li class="update-options_list_item">
-            <button id="updateNowBtn">Обновить сейчас</button>
-          </li>
-        <ul>
+       <ul>
       <div>
     </header>
 
       <main>
         <div>
-            <h2>Последнее входящее письмо с документом</h2>
-
-            <span><i>От кого: </i><a href="mailto:example@example.com">example@example.com</a></span>
-            <br>
-            <span><i>Тема: </i>Тема письма текст</span>
-
-        </div>
-
-        <div>
-          <span><i>Прикрепленные документы: </i></span>
-          <ul class="document_list">
-            <li class="document_list_element">
-              example_document.pdf
-            </li>  
-          </ul>
-        </div>
-
-        <div>
-          <div id="chain">
-            <h3>Цепочка выполнения:</h3>
-            <div id="chainStages"></div>
-          </div>
-
           <ol class="steps-list">
-              <li class="steps_list_element">
-                  <p>Считывание текста письма</p><a href="#"><i>Посмотреть текст</i></a>
+              <li class="steps_list_element" id="textParseStatus">
               </li>
-              <li class="steps_list_element">
-                  <p>Выделение необходимых данных из текста</p><a href="#"><i>Посмотреть полученные данные</i></a>
+              <li class="steps_list_element" id="aiRecognitionStatus">
               </li>
-              <li class="steps_list_element">
-                  <p>Создание входящего письма в Directum RX</p><a href="#"><i>Ссылка на итоговое входящее письмо</i></a>
+              <li class="steps_list_element" id="directumRPAStatus">
               </li>
           </ol>
         </div>
-    
+        <div id="status"></div>
+    <div id="chain">
+        <h3>Цепочка выполнения:</h3>
+        <div id="chainStages"></div>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script>
@@ -90,9 +58,35 @@
         });
         
         socket.on('new_email', data => {
-            document.getElementById('status').innerHTML += `<br>📧 Новое письмо: ${data.subject}`;
+            document.getElementById('status').innerHTML += `<br>📧 Получено новое письмо! ${data.subject}`;
         });
-        
+
+        socket.on('text_parse_started', data => {
+            document.getElementById('textParseStatus').innerHTML += `<p class="list_element_text">Получение текста из письма...</p>`;
+        });
+
+        socket.on('text_parse_finished', data => {
+            document.getElementById('textParseStatus').innerHTML += `<a href='../scripts/input_data/email.txt'>Полученный текст письма</a>`;
+        });
+
+        socket.on('ai_data_recognition_started', data => {
+            document.getElementById('aiRecognitionStatus').innerHTML += `<p class="list_element_text">Извлечение ключевых данных из текста...</p>`;
+        });
+
+        socket.on('ai_data_recognition_finished', data => {
+            document.getElementById('aiRecognitionStatus').innerHTML += `<a href='../scripts/processed_data.json'>JSON с данными</a>`;
+        });
+
+        socket.on('directum_rpa_started', data => {
+            document.getElementById('directumRPAStatus').innerHTML += `<p class="list_element_text">Добавление входящего письма в Directum RX...</p>`;
+        });
+
+        socket.on('directum_rpa_finished', data => {
+            document.getElementById('directumRPAStatus').innerHTML += `<p><i>Все готово!</i></p>`;
+        });
+
+
+
         socket.on('chain_update', data => {
             document.getElementById('chainStages').innerHTML = `
                 <p><strong>${data.stage}</strong>: ${data.status}</p>

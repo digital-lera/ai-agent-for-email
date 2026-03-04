@@ -27,8 +27,13 @@ response: ChatResponse = chat(model='akdengi/saiga-llama3-8b', messages=[
     {
         'role': 'user',
         'content': message,
+        
         },
-    ])
+    ],
+    options={
+        'temperature': 0.35
+        }
+                              )
 
 try:
     with open("prompts/prompt_for_json.txt", 'r', encoding='utf-8') as prompt:
@@ -45,7 +50,11 @@ response_with_json: ChatResponse = chat(model='akdengi/saiga-llama3-8b', message
         'role': 'user',
         'content': message_for_json,
         },
-    ])
+    ],
+    options={
+        'temperature': 0.35
+        }
+)
 
 
 with open("processed_data.json","w") as data:
