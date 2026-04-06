@@ -212,4 +212,4 @@ __marimo__/
 scripts/input_data/
 *.txt
 **.json
-
+*.pdf

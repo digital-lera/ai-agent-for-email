@@ -1,0 +1,12 @@
+version: '3'
+services: 
+  flask:
+    build: .
+    container_name: TAIF-mail
+    environment:
+      - FLASK_ENV=development
+      - PYTHONUNBUFFERED=True
+    restart: on-failure
+    ports:
+      - "5000:5000"
+    command: gunicorn --bind 127.0.0.1:5000 email_monitor:app

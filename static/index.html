@@ -31,7 +31,7 @@
               </li>
               <li class="steps_list_element" id="aiRecognitionStatus">
               </li>
-              <li class="steps_list_element" id="directumRPAStatus">
+              <li class="steps_list_element" id="directumAPIStatus">
               </li>
           </ol>
         </div>
@@ -78,11 +78,11 @@
         });
 
         socket.on('directum_rpa_started', data => {
-            document.getElementById('directumRPAStatus').innerHTML += `<p class="list_element_text">Добавление входящего письма в Directum RX...</p>`;
+            document.getElementById('directumAPIStatus').innerHTML += `<p class="list_element_text">Добавление входящего письма в Directum RX...</p>`;
         });
 
-        socket.on('directum_rpa_finished', data => {
-            document.getElementById('directumRPAStatus').innerHTML += `<p><i>Все готово!</i></p>`;
+        socket.on('directum_api_finished', data => {
+            document.getElementById('directumAPIStatus').innerHTML += `<p><i>Все готово!</i></p>`;
         });
 
 

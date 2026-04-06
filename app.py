@@ -1,6 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 from flask import Flask, render_template
 from flask_socketio import SocketIO
-from apscheduler.schedulers.background import BackgroundScheduler
 import threading
 import subprocess
 import imaplib
@@ -23,7 +25,8 @@ def check_email():
     print("Checking email..")
     try:
         
-        shutil.rmtree('scripts/input_data', ignore_errors=True)
+        shutil.rmtree('scripts/input_data')
+        
         os.mkdir('scripts/input_data')
         
         with open('scripts/login.json', 'r') as login_file:
@@ -71,6 +74,9 @@ def check_email():
 
 
                     fileName = ' '.join(decoded_parts)
+                    
+                    if fileName == "":
+                        fileName = "file.pdf"
 
                     filePath = os.path.join('./scripts/input_data', fileName)
                     if not os.path.isfile(filePath):
@@ -96,7 +102,7 @@ def run_chain():
     stages = [
             ('pdf_parse.py', 'Получение текста документа'),
             ('ai_output_json.py', 'Выделение необходимых данных'),
-            ('rpa_for_directum.robot', 'Создание входящего письма в Directum RX')
+            ('directum.py', 'Создание входящего письма в Directum RX')
             ]
     
 
@@ -111,13 +117,13 @@ def run_chain():
                 socketio.emit('text_parse_started', 'true')
             elif (script == 'ai_output_json.py'):
                 socketio.emit('ai_data_recognition_started')
-            elif (script == 'rpa_for_directum.robot', 'true'):
-                socketio.emit('directum_rpa_started', 'true')
+            elif (script == 'directum.py', 'true'):
+                socketio.emit('directum_api_started', 'true')
                 
                 
 
 
-            cmd = ['python', f'{script}'] if script.endswith('.py') else ['robot', f'{script}']
+            cmd = ['python', f'{script}']
             result = subprocess.run(cmd, capture_output=True, text=True, cwd='scripts/')
             
             chain_status['status'] = 'Completed' if result.returncode == 0 else 'Error'
@@ -130,8 +136,8 @@ def run_chain():
                 socketio.emit('text_parse_finished', 'true')
             elif (script == 'ai_output_json.py'):
                 socketio.emit('ai_data_recognition_finished')
-            elif (script == 'rpa_for_directum.robot', 'true'):
-                socketio.emit('directum_rpa_finished', 'true')
+            elif (script == 'directum.py', 'true'):
+                socketio.emit('directum_api_finished', 'true')
              
 
         chain_status['complete'] = True
@@ -165,4 +171,4 @@ def stop_monitor():
 
 if __name__ == '__main__':
     os.makedirs('results', exist_ok=True)
-    socketio.run(app, debug=True, port=5000)
+    app.run(host='127.0.0.1')
