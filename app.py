@@ -25,11 +25,11 @@ def check_email():
     print("Checking email..")
     try:
         
-        shutil.rmtree('scripts/input_data')
+        shutil.rmtree('src/scripts/input_data')
         
-        os.mkdir('scripts/input_data')
+        os.mkdir('src/scripts/input_data')
         
-        with open('scripts/login.json', 'r') as login_file:
+        with open('src/scripts/login.json', 'r') as login_file:
             login_data = json.load(login_file)
 
         mail_pass = login_data['password']
@@ -78,7 +78,7 @@ def check_email():
                     if fileName == "":
                         fileName = "file.pdf"
 
-                    filePath = os.path.join('./scripts/input_data', fileName)
+                    filePath = os.path.join('./src/scripts/input_data', fileName)
                     if not os.path.isfile(filePath):
                         print(fileName)
                         fp = open(filePath, 'wb')
@@ -86,9 +86,9 @@ def check_email():
                         fp.close()
                         print('fp closed ...')
  
-                    with open('scripts/filename.txt', 'w') as filename_txt:
+                    with open('src/scripts/filename.txt', 'w') as filename_txt:
                         filename_txt.write(fileName)
-
+                        socketio.emit('filename_recognized', f'{fileName}')
            
             run_chain()
 
@@ -99,6 +99,7 @@ def check_email():
         socketio.emit('error', str(e))
 
 def run_chain():
+    print("running stages")
     stages = [
             ('pdf_parse.py', 'Получение текста документа'),
             ('ai_output_json.py', 'Выделение необходимых данных'),
@@ -124,9 +125,14 @@ def run_chain():
 
 
             cmd = ['python', f'{script}']
-            result = subprocess.run(cmd, capture_output=True, text=True, cwd='scripts/')
+            result = subprocess.run(cmd, capture_output=True, text=True, cwd='src/scripts/')
             
             chain_status['status'] = 'Completed' if result.returncode == 0 else 'Error'
+
+            if (chain_status['status'] == 'Error'):
+                socketio.emit('error')
+                break
+
             print(f"Stage completed - {name}")
             chain_status['log'] = result.stdout + result.stderr
             socketio.emit('chain_update', chain_status)
@@ -153,11 +159,7 @@ def index():
 def start_monitor():
     global monitor_running
     monitor_running = True
-    
-#    scheduler = BackgroundScheduler()
- #   scheduler.add_job(check_email, 'interval', minutes=5)  # N минут
-  #  scheduler.start()
-    
+   
     check_email()
 
     return {'status': 'started'}

@@ -7,7 +7,8 @@ filename = 'file.pdf'
 with open('filename.txt', 'r') as file:
     filename = file.read()
 
-images = convert_from_path(f"input_data/{filename}")
+
+images = convert_from_path(f"input_data/{str(filename)}")
 
 if not(images):
     print("images_were_not_found")
@@ -31,11 +32,11 @@ for index, image in enumerate(images):
     result = ocr.predict(image_path)
 
     if isinstance(result, list) and len(result) > 0:
-        rec_texts = result[0].get("rec_texts", [])
+        rec_texts += result[0].get("rec_texts", [])
     elif isinstance(result, dict):
-        rec_texts = result.get("rec_texts", [])
+        rec_texts += result.get("rec_texts", [])
     else:
-        rec_texts = []
+        rec_texts += []
 
     print("text recognized")
 

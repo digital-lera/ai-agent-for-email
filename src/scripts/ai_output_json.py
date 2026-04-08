@@ -7,6 +7,7 @@ email_content="Оповести пользователя, что текст пи
 try:
     with open("prompts/prompt_for_preprocessing.txt", 'r', encoding='utf-8') as prompt:
         prompt_text = prompt.read()
+        print("prompt 1 read")
 except FileNotFoundError:
     print("Error: prompt text was not provided.")
 except Exception as e:
@@ -15,6 +16,7 @@ except Exception as e:
 try:
     with open("input_data/email.txt", 'r', encoding='utf-8') as email:
         email_content = email.read()
+        print("email read")
 except FileNotFoundError:
     print("Error: file with text output of the email was not provided.")
 except Exception as e:
@@ -34,10 +36,12 @@ response: ChatResponse = chat(model='akdengi/saiga-llama3-8b', messages=[
         'temperature': 0.35
         }
                               )
+print("first process finished")
 
 try:
     with open("prompts/prompt_for_json.txt", 'r', encoding='utf-8') as prompt:
         prompt_text = prompt.read()
+        print("prompt 2 read")
 except FileNotFoundError:
     print("Error: prompt for json text was not provided.")
 except Exception as e:
@@ -55,6 +59,8 @@ response_with_json: ChatResponse = chat(model='akdengi/saiga-llama3-8b', message
         'temperature': 0.35
         }
 )
+print("processing finished")
+
 
 
 with open("processed_data.json","w") as data:

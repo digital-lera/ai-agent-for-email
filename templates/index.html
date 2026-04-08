@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Панель управления</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/style.css')}}">
+    <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  </head>
+  <body>
+    <header class="page-header">
+        <p>Панель управления</p>
+
+        <p>Частота опроса<input type="number" id="pollingRate" min="1" max="10" value="3"> мин.</p>
+
+        <button id="startBtn">Запустить мониторинг</button>
+
+        <div class="email-info">
+        <p>Корпоративный почтовый ящик:</p>
+        <a href="mailto:StryginaVM@taif.ru">corporate@taif.ru</a>
+        </div>
+   </header>
+
+      <main>
+          <div class="monitoring-panel">
+            <h3>Мониторинг почтового ящика</h3>
+            <div id="status" ><p>Новых писем нет.</p></div>
+            <div id="filename"></div>
+          </div>
+        <div class="data-refinement-stages">
+            <h3>Этапы обработки</h3>
+          <ol class="steps-list">
+              <li class="steps_list_element" id="textParseStatus">
+                  Обработка текста письма с OCR
+              </li>
+              <li class="steps_list_element" id="aiRecognitionStatus">
+                  Выделение необходимых данных из текста
+              </li>
+              <li class="steps_list_element" id="directumAPIStatus">
+                  Создание входящего письма в Directum RX
+              </li>
+          </ol>
+        </div>
+
+        <div class="console-output">  
+        <h3>Вывод консоли</h3>
+    <div id="chain">
+        <div id="chainStages"></div>
+    </div>
+        </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        const socket = io();
+        
+        document.getElementById('startBtn').onclick = () => {
+            fetch('/start_monitor');
+        };
+       
+        socket.on('new_email', data => {
+            document.getElementById('status').innerHTML = `📧 Получено новое письмо! ${data.subject}`;
+            document.getElementById('filename').innerHTML = ``
+            document.getElementById('status').classList.remove('error');
+        });
+
+        socket.on('text_parse_started', data => {
+            document.getElementById('textParseStatus').classList.add('in-process');
+        });
+
+        socket.on('text_parse_finished', data => {
+            document.getElementById('textParseStatus').classList.add('completed');
+            document.getElementById('textParseStatus').classList.remove('in-process');
+
+        });
+
+        socket.on('ai_data_recognition_started', data => {
+            document.getElementById('aiRecognitionStatus').classList.add('in-process');
+        });
+
+        socket.on('ai_data_recognition_finished', data => {
+            document.getElementById('aiRecognitionStatus').classList.add('completed');
+            document.getElementById('aiRecognitionStatus').classList.remove('in-process');
+        });
+
+        socket.on('directum_api_started', data => {
+            document.getElementById('directumAPIStatus').classList.add('in-process');
+        });
+
+        socket.on('directum_api_finished', data => {
+            document.getElementById('directumAPIStatus').classList.remove('in-process');
+            document.getElementById('directumAPIStatus').classList.add('completed');   
+            document.getElementById('status').innerHTML = `<p>Обработка завершена</p>`;
+       
+     });
+
+        socket.on('filename_recognized', data => {
+            document.getElementById('filename').innerHTML = `<p>Вложенный файл: ${data}</p>`
+        });
+
+        socket.on('chain_update', data => {
+            document.getElementById('chainStages').innerHTML = `
+                <p><strong>${data.stage}</strong>: ${data.status}</p>
+                <pre>${data.log || ''}</pre>
+            `;
+        });
+
+        socket.on('error', data => {
+            document.getElementById('directumAPIStatus').classList.remove('in-process', 'completed');
+            document.getElementById('aiRecognitionStatus').classList.remove('in-process', 'completed');
+            document.getElementById('textParseStatus').classList.remove('in-process','completed');
+
+
+            document.getElementById('status').innerHTML = `Ошибка! Дополнительную информацию можно найти в консоли или логах`;
+            document.getElementById('status').classList.add('error');
+        })
+    </script>
+      </main>
+
+      <footer>
+
+          <div class="copyright-footer">
+            2026 - АО ТАИФ - Управление по АСУ и телекоммуникациям
+          </div>
+
+      </footer>
+
+  </body>
+</html>
