@@ -1,5 +1,16 @@
+import ollama
 from ollama import chat
 from ollama import ChatResponse
+
+def is_model_running(model_name):
+    # Retrieve models currently loaded into memory
+    running_models = ollama.ps()
+    
+    # Check if any running model name matches yours
+    for model in running_models.get('models', []):
+        if model['name'] == model_name or model['model'] == model_name:
+            return True
+    return False
 
 prompt_text=" Произошла ошибка при загрузке промпта."
 email_content="Оповести пользователя, что текст письма не предоставлен"
@@ -22,10 +33,22 @@ except FileNotFoundError:
 except Exception as e:
     print(f"An error occured: {e}")
 
-message = f"{prompt_text}\n{email_content}"
+filename_message = ""
 
+try:
+    with open("filename.txt", 'r') as filename:
+        filename_message = filename.read()
+except FileNotFoundError:
+    print("Error: filename was not provided.")
+except Exception as e:
+    print(f"An error occured: {e}")
 
-response: ChatResponse = chat(model='akdengi/saiga-llama3-8b', messages=[
+message = f"{prompt_text}\n\n{filename_message}\n{email_content}"
+
+if (not is_model_running('akdengi/saiga-llama3-8b:latest')):
+    print('model is not running')
+
+response: ChatResponse = chat(model='akdengi/saiga-llama3-8b:latest', messages=[
     {
         'role': 'user',
         'content': message,
@@ -49,7 +72,7 @@ except Exception as e:
 
 message_for_json = f"{prompt_text}\n{response['message']['content']}"
 
-response_with_json: ChatResponse = chat(model='akdengi/saiga-llama3-8b', messages=[
+response_with_json: ChatResponse = chat(model='akdengi/saiga-llama3-8b:latest', messages=[
     {
         'role': 'user',
         'content': message_for_json,

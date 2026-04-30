@@ -213,3 +213,4 @@ scripts/input_data/
 *.txt
 **.json
 *.pdf
+src/scripts/input_data/file.png

@@ -32,7 +32,7 @@ def check_email():
         with open('src/scripts/login.json', 'r') as login_file:
             login_data = json.load(login_file)
 
-        mail_pass = login_data['password']
+        mail_pass = "SwkRE4PrSwkRE4P"
         username = f"{login_data['username']}@uktaif.ru"
         imap_server = "ukexch.uktaif.ru"
         imap = imaplib.IMAP4_SSL(imap_server)
@@ -136,7 +136,6 @@ def run_chain():
             print(f"Stage completed - {name}")
             chain_status['log'] = result.stdout + result.stderr
             socketio.emit('chain_update', chain_status)
-            time.sleep(1)
 
             if (script == 'pdf_parse.py'):
                 socketio.emit('text_parse_finished', 'true')

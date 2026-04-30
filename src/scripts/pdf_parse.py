@@ -8,7 +8,7 @@ with open('filename.txt', 'r') as file:
     filename = file.read()
 
 
-images = convert_from_path(f"input_data/{str(filename)}")
+images = convert_from_path(f"input_data/{filename}")
 
 if not(images):
     print("images_were_not_found")
