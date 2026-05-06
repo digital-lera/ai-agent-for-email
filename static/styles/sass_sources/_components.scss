@@ -1,0 +1,194 @@
+.board{
+        
+    margin-top: 31px;
+
+    .board__header{
+        margin: 0;
+        margin-bottom: 14px;
+
+        font-size: 21;
+        font-weight: 600;
+    }
+
+    .board__container{
+        @include container-card;
+
+        
+    }
+
+}
+
+.dashboard__main-info{
+
+    .board__header{
+        color: $gray-service-cold;
+    }
+
+    .board.refinement-steps{
+
+        .board__container{
+            background-color: transparent;
+            -webkit-box-shadow: none;
+            -moz-box-shadow: none;
+            box-shadow: none;
+            padding: 0;
+        }
+
+        .steps-list{
+
+            list-style-type: none;
+            padding: 0;
+
+            .steps-list__element{
+                @include container-card;
+                margin-bottom: 14;
+
+                display: grid;
+                grid-template-columns: 40px 1fr;
+                grid-column-gap: 15px;
+
+                .steps-list__element__icon {
+                    grid-column: 1;
+                    grid-row: span 2;
+
+                    width: 40;
+                    height: auto;
+
+                    align-self: center;
+                }
+
+                .steps-list__element__step-name {
+                    grid-column: 2;
+                    grid-row: 1;
+                    margin: 0;
+                }
+
+                .steps-list__element__progress-bar {
+                    grid-column: 2;
+                    grid-row: 2;
+
+                    align-self: flex-end;
+                    width: 100%;
+                    height: 7px;
+                    border-radius: 30px;
+
+                    background-color: $gray-icon;
+                }
+
+                :last-child{
+                    margin-bottom: 0;
+                }
+            }
+
+            .steps-list__element.out-of-service{
+                opacity: 50%;
+
+                -webkit-box-shadow: none;
+                -moz-box-shadow: none;
+                box-shadow: none;
+            }
+
+        }
+
+    }
+
+    .board.obtained-data{
+        .obtained-data__list{
+
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+
+            .obtained-data__list__element {
+                display: grid;
+                grid-template-columns: 85px 1fr;
+                grid-column-gap: 22px;
+
+                margin-bottom: 10px;
+
+                .obtained-data__list__element__field-name{
+                    margin: 0;
+                    color: $ultraviolet;
+                    font-size: 15;
+                    font-style: italic;
+                }
+
+                .obtained-data__list__element__content{
+                    margin: 0;
+                }
+
+            }
+            :last-child {
+                margin-bottom: 0;
+            }
+        }
+    }
+}
+
+.dashboard__dev-info{
+    .board__header{
+        color: $gray-muted-header;
+        font-style: italic;
+    }
+
+    .board.connection-status{
+
+        .connection-status__list{
+
+            padding: 0;
+            margin: 0; 
+
+            .connection-status__list__element{
+
+                display: flex;
+
+                .connection-status__list__element__server-name{
+                    margin: 0;
+                    margin-right: 11;
+                    
+                }
+
+                .connection-status__list__element__status{
+                    margin: 0;
+                }
+
+                .connection-status__list__element__status.ok{
+                    color: $green;
+                }
+
+                .connection-status__list__element__status.error{
+                    color: $error-red;
+                }
+
+                margin-bottom: 13px;
+
+                
+            }
+
+            .connection-status__list__element::before {
+                content: "";
+                display: inline-block;
+                align-self: center;
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                background-color: $gray-muted-header;
+                margin-right: 10px; 
+                vertical-align: middle;
+            }
+
+            .connection-status__list__element:has(.ok)::before{
+                background-color: $green;
+            }
+
+            .connection-status__list__element:has(.error)::before{
+                background-color: $error-red;
+            }
+
+            :last-child {
+                margin-bottom: 0;
+            }
+        }
+    }
+}
+

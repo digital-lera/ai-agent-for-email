@@ -1,129 +1,243 @@
-<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Панель управления</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/style.css')}}">
-    <link rel="icon" href="./favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" type="text/css" href="https://necolas.github.io/normalize.css/8.0.1/normalize.css">
+    <title>Панель управления</title>
   </head>
   <body>
-    <header class="page-header">
-        <p>Панель управления</p>
 
-        <p>Частота опроса<input type="number" id="pollingRate" min="1" max="10" value="3"> мин.</p>
+   <header class="header">
+      
+      <div class="header__title-container">
+        <img width="63" height="auto" class="logo-small" alt="ТАИФ" src="images/TAIF-logo-small.png"/>
+        <h1 class="title">
+            Панель управления почтовым ИИ-агентом
+        </h1>
+      </div>
 
-        <button id="startBtn">Запустить мониторинг</button>
+      <div class="header__email-info">
+          <img class="email-info__icon" alt="Информация о почте" src="images/mail-icon.svg"/>
+          <h3 class="email-info__header">
+              Корпоративная почта
+          </h3>
+          <a class="email-info__link" href="mailto:corporate@uktaif.ru">
+              corporate@uktaif.ru
+          </a>
+      </div>
+    </header>
+    <main class="dashboard">
+      <div class="dashboard__main-info">
+          <section class="board monitoring">
+              <h3 class="board__header">
+                  Мониторинг почтового ящика
+              </h3>
+              <div class="board__container">
+                  <div id="status">
+                      <p class="monitoring-status">Новых писем нет.</p>
+                  </div>
+              </div>
+          </section>
+          <section class="board refinement-steps">
+              <h3 class="board__header">
+                  Этапы обработки
+              </h3>
+              <div class="board__container">
+                  <ol class="steps-list">
+                      <li class="steps-list__element completed" id="textParseStatus">
+                            <img class="steps-list__element__icon" src="images/one_icon.svg"/>
 
-        <div class="email-info">
-        <p>Корпоративный почтовый ящик:</p>
-        <a href="mailto:StryginaVM@taif.ru">corporate@taif.ru</a>
-        </div>
-   </header>
+                            <p class="steps-list__element__step-name">Обработка текста письма с OCR</p>
+                            <div class="steps-list__element__progress-bar"></div>
+                      </li>
+                      <li class="steps-list__element in-process" id="aiRecognitionStatus">
+                            <img class="step-icon" src="images/two_icon.svg"/>
+                            <p class="steps-list__element__step-name">Выделение необходимых данных из текста</p>
+                            <div class="steps-list__element__progress-bar"></div>
+                      </li>
+                      <li class="steps-list__element out-of-service" id="directumAPIStatus">
+                            <img class="step-icon" src="images/three_icon.svg"/>
+                            <p class="steps-list__element__step-name">Создание входящего письма в Directum RX</p>
+                            <div class="steps-list__element__progress-bar"></div>
+                      </li>
+                  </ol>
+              </div>
+          </section>
+          <section class="board obtained-data">
+              <h3 class="board__header">
+                  Полученные данные
+              </h3>
+              <div class="board__container">
+                  <ul class="obtained-data__list">
+                      <li class="obtained-data__list__element" id="short-content">
+                          <p class="obtained-data__list__element__field-name">
+                              Краткое содержание:
+                          </p>
+                          <p class="obtained-data__list__element__content">
+                              -
+                          </p>
+                      </li>
+                      <li class="obtained-data__list__element" id="contragent">
+                          <p class="obtained-data__list__element__field-name">
+                              Контрагент:
+                          </p>
+                          <p class="obtained-data__list__element__content">
+                              -
+                          </p>
+                      </li>
+                      <li class="obtained-data__list__element" id="signed-by">
+                          <p class="obtained-data__list__element__field-name">
+                              Подписант:
+                          </p>
+                          <p class="obtained-data__list__element__content">
+                              -
+                          </p>
+                      </li>
+                      <li class="obtained-data__list__element" id="recipient">
+                          <p class="obtained-data__list__element__field-name">
+                              Получатель:
+                          </p>
+                          <p class="obtained-data__list__element__content">
+                              -
+                          </p>
+                      </li>
+                      <li class="obtained-data__list__element" id="date">
+                          <p class="obtained-data__list__element__field-name">
+                              Дата:
+                          </p>
+                          <p class="obtained-data__list__element__content">
+                              -
+                          </p>
+                      </li>
+                      <li class="obtained-data__list__element" id="number">
+                          <p class="obtained-data__list__element__field-name">
+                              Номер:
+                          </p>
+                          <p class="obtained-data__list__element__content">
+                              -
+                          </p>
+                      </li>
+                  </ul>
+                  
+              </div>
+          </section>
+      </div>
 
-      <main>
-          <div class="monitoring-panel">
-            <h3>Мониторинг почтового ящика</h3>
-            <div id="status" ><p>Новых писем нет.</p></div>
-            <div id="filename"></div>
-          </div>
-        <div class="data-refinement-stages">
-            <h3>Этапы обработки</h3>
-          <ol class="steps-list">
-              <li class="steps_list_element" id="textParseStatus">
-                  Обработка текста письма с OCR
-              </li>
-              <li class="steps_list_element" id="aiRecognitionStatus">
-                  Выделение необходимых данных из текста
-              </li>
-              <li class="steps_list_element" id="directumAPIStatus">
-                  Создание входящего письма в Directum RX
-              </li>
-          </ol>
-        </div>
+      <div class="dashboard__dev-info">
+          <section class="board connection-status">
+              <h3 class="board__header">
+                  Статус подключений
+              </h3>
+              <div class="board__container">
+                  <ul class="connection-status__list">
+                      <li class="connection-status__list__element">
+                          <p class="connection-status__list__element__server-name">
+                              Почтовый сервер Outlook:
+                          </p>
+                          <p class="connection-status__list__element__status ok">
+                              ОК
+                          </p>
+                      </li>
+                      <li class="connection-status__list__element">
+                          <p class="connection-status__list__element__server-name">
+                              Сервер DirectumRX:
+                          </p>
+                          <p class="connection-status__list__element__status error">
+                              не определен
+                          </p>
+                      </li>
+                  </ul>
+              </div>
+          </section>
+          <section class="board log-console">
+              <h3 class="board__header">
+                  Вывод консоли
+              </h3>
+              <div class="board__container">
+                  <div id="chain">
+                      <div id="chainStages"></div>
+                  </div>
+              </div>
+          </section>
+      </div>
+    </main>
 
-        <div class="console-output">  
-        <h3>Вывод консоли</h3>
-    <div id="chain">
-        <div id="chainStages"></div>
-    </div>
-        </div>
+    <footer class="copyright-footer">
+      <p class="copyright-footer__text">
+          2026 - АО ТАИФ - Управление по АСУ и телекоммуникациям
+      </p>
+      <a class="copyright-footer__contact"
+      href="mailto:StryginaVM@uktaif.ru">
+          Связаться с разработчиками
+      </a>
+    </footer>
+
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-    <script>
-        const socket = io();
+      <script>
+          const socket = io();
+          
+          document.getElementById('startBtn').onclick = () => {
+              fetch('/start_monitor');
+          };
         
-        document.getElementById('startBtn').onclick = () => {
-            fetch('/start_monitor');
-        };
-       
-        socket.on('new_email', data => {
-            document.getElementById('status').innerHTML = `📧 Получено новое письмо! ${data.subject}`;
-            document.getElementById('filename').innerHTML = ``
-            document.getElementById('status').classList.remove('error');
-        });
+          socket.on('new_email', data => {
+              document.getElementById('status').innerHTML = `📧 Получено новое письмо! ${data.subject}`;
+              document.getElementById('filename').innerHTML = ``
+              document.getElementById('status').classList.remove('error');
+          });
 
-        socket.on('text_parse_started', data => {
-            document.getElementById('textParseStatus').classList.add('in-process');
-        });
+          socket.on('text_parse_started', data => {
+              document.getElementById('textParseStatus').classList.add('in-process');
+          });
 
-        socket.on('text_parse_finished', data => {
-            document.getElementById('textParseStatus').classList.add('completed');
-            document.getElementById('textParseStatus').classList.remove('in-process');
+          socket.on('text_parse_finished', data => {
+              document.getElementById('textParseStatus').classList.add('completed');
+              document.getElementById('textParseStatus').classList.remove('in-process');
 
-        });
+          });
 
-        socket.on('ai_data_recognition_started', data => {
-            document.getElementById('aiRecognitionStatus').classList.add('in-process');
-        });
+          socket.on('ai_data_recognition_started', data => {
+              document.getElementById('aiRecognitionStatus').classList.add('in-process');
+          });
 
-        socket.on('ai_data_recognition_finished', data => {
-            document.getElementById('aiRecognitionStatus').classList.add('completed');
-            document.getElementById('aiRecognitionStatus').classList.remove('in-process');
-        });
+          socket.on('ai_data_recognition_finished', data => {
+              document.getElementById('aiRecognitionStatus').classList.add('completed');
+              document.getElementById('aiRecognitionStatus').classList.remove('in-process');
+          });
 
-        socket.on('directum_api_started', data => {
-            document.getElementById('directumAPIStatus').classList.add('in-process');
-        });
+          socket.on('directum_api_started', data => {
+              document.getElementById('directumAPIStatus').classList.add('in-process');
+          });
 
-        socket.on('directum_api_finished', data => {
-            document.getElementById('directumAPIStatus').classList.remove('in-process');
-            document.getElementById('directumAPIStatus').classList.add('completed');   
-            document.getElementById('status').innerHTML = `<p>Обработка завершена</p>`;
-       
-     });
+          socket.on('directum_api_finished', data => {
+              document.getElementById('directumAPIStatus').classList.remove('in-process');
+              document.getElementById('directumAPIStatus').classList.add('completed');   
+              document.getElementById('status').innerHTML = `<p>Обработка завершена</p>`;
+        
+      });
 
-        socket.on('filename_recognized', data => {
-            document.getElementById('filename').innerHTML = `<p>Вложенный файл: ${data}</p>`
-        });
+          socket.on('filename_recognized', data => {
+              document.getElementById('filename').innerHTML = `<p>Вложенный файл: ${data}</p>`
+          });
 
-        socket.on('chain_update', data => {
-            document.getElementById('chainStages').innerHTML = `
-                <p><strong>${data.stage}</strong>: ${data.status}</p>
-                <pre>${data.log || ''}</pre>
-            `;
-        });
+          socket.on('chain_update', data => {
+              document.getElementById('chainStages').innerHTML = `
+                  <p><strong>${data.stage}</strong>: ${data.status}</p>
+                  <pre>${data.log || ''}</pre>
+              `;
+          });
 
-        socket.on('error', data => {
-            document.getElementById('directumAPIStatus').classList.remove('in-process', 'completed');
-            document.getElementById('aiRecognitionStatus').classList.remove('in-process', 'completed');
-            document.getElementById('textParseStatus').classList.remove('in-process','completed');
+          socket.on('error', data => {
+              document.getElementById('directumAPIStatus').classList.remove('in-process', 'completed');
+              document.getElementById('aiRecognitionStatus').classList.remove('in-process', 'completed');
+              document.getElementById('textParseStatus').classList.remove('in-process','completed');
 
 
-            document.getElementById('status').innerHTML = `Ошибка! Дополнительную информацию можно найти в консоли или логах`;
-            document.getElementById('status').classList.add('error');
-        })
-    </script>
-      </main>
-
-      <footer>
-
-          <div class="copyright-footer">
-            2026 - АО ТАИФ - Управление по АСУ и телекоммуникациям
-          </div>
-
-      </footer>
-
+              document.getElementById('status').innerHTML = `Ошибка! Дополнительную информацию можно найти в консоли или логах`;
+              document.getElementById('status').classList.add('error');
+          })
+      </script>
   </body>
 </html>

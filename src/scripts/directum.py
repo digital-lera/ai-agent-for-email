@@ -32,7 +32,7 @@ def main():
 
     global MAIN_REFINED_DATA
 
-    with open("src/scripts/login.json", "r") as file:
+    with open("login.json", "r") as file:
         auth_data = json.load(file)
 
     DIRECTUM_URL = f"{auth_data['odataurl']}"
@@ -43,7 +43,7 @@ def main():
     warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
     # Забираем из файла готовые данные, взятые из письма LLM-моделью
-    with open("src/scripts/processed_data.json", "r") as file:
+    with open("processed_data.json", "r") as file:
         MAIN_REFINED_DATA = json.load(file)
 
     SIGNEDBY_ID = get_signed_by_contact()
@@ -233,13 +233,13 @@ def create_incoming_letter():
 
 def add_files_to_incoming_letter():
 
-    with open("src/scripts/filename.txt", "r") as f:
+    with open("filename.txt", "r") as f:
             pdf_path = f.read()
 
     pdf_bytes = b""
 
     try:
-        with open(f"src/scripts/input_data/{pdf_path}", "rb") as pdf_file:
+        with open(f"input_data/{pdf_path}", "rb") as pdf_file:
             pdf_bytes = pdf_file.read()
     except:
         print("Файл не найден. Ошибка в пути")

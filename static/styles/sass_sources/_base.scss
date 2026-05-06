@@ -1,0 +1,62 @@
+// Colors
+
+$white: #FFFFFF;
+
+$gray-background: #EDEDF3;
+$gray-icon: #C9C9C9;
+$gray-muted-header: #949494;
+$gray-cold-footer: #DBDFE8;
+$gray-service-cold: #26334A;
+
+$green: #29CB97;
+$ultraviolet: #3870FF;
+$orange: #FF9838;
+$error-red: #FF1418;
+
+
+// Fonts
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+$font: 'Roboto','sans-serif';
+
+// Mixins
+
+@mixin basic-padding {
+
+    padding: 15px 300px;
+    margin: 0;
+}
+
+@mixin center-flex {
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+}
+
+@mixin container-shadow {
+    webkit-box-shadow: 0px 5px 8px 1px rgba(34, 60, 80, 0.14);
+    -moz-box-shadow: 0px 5px 8px 1px rgba(34, 60, 80, 0.14);
+    box-shadow: 0px 5px 8px 1px rgba(34, 60, 80, 0.14);
+}
+
+@mixin section-shadow {
+    -webkit-box-shadow: 0px 18px 12px -18px rgba(34, 60, 80, 0.2) inset;
+    -moz-box-shadow: 0px 18px 12px -18px rgba(34, 60, 80, 0.2) inset;
+    box-shadow: 0px 18px 12px -18px rgba(34, 60, 80, 0.2) inset;
+}
+
+@mixin container-card {
+
+    background-color: white;
+    border-radius: 10px;
+    padding: 26px;
+
+    font-size: 16;
+    color: $gray-service-cold;
+
+    @include container-shadow();
+}
+
+
