@@ -23,3 +23,6 @@ services:
       - ollama:/root/.ollama  # модели сохраняются
     command: ollama run bambucha/saiga-llama3
     restart: unless-stopped
+
+volumes:
+  ollama:
