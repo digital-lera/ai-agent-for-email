@@ -18,7 +18,7 @@ services:
     image: ollama/ollama:latest
     container_name: taif-ollama
     ports:
-      - "11434:11434"
+      - "11435:11434"
     volumes:
       - ollama:/root/.ollama  # модели сохраняются
     command: ollama run bambucha/saiga-llama3

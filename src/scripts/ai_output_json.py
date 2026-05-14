@@ -45,10 +45,10 @@ except Exception as e:
 
 message = f"{prompt_text}\n\n{filename_message}\n{email_content}"
 
-if (not is_model_running('akdengi/saiga-llama3-8b:latest')):
+if (not is_model_running('bambucha/saiga-llama3:latest')):
     print('model is not running')
 
-response: ChatResponse = chat(model='akdengi/saiga-llama3-8b:latest', messages=[
+response: ChatResponse = chat(model='bambucha/saiga-llama3:latest', messages=[
     {
         'role': 'user',
         'content': message,
@@ -72,7 +72,7 @@ except Exception as e:
 
 message_for_json = f"{prompt_text}\n{response['message']['content']}"
 
-response_with_json: ChatResponse = chat(model='akdengi/saiga-llama3-8b:latest', messages=[
+response_with_json: ChatResponse = chat(model='bambucha/saiga-llama3:latest', messages=[
     {
         'role': 'user',
         'content': message_for_json,
