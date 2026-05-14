@@ -9,3 +9,11 @@ services:
     ports:
       - "8000:8000"  # публикуем порт
     command: gunicorn app:app -b 0.0.0.0:8000 -w 4  # слушаем все интерфейсы
+  watchtower:
+    image: containrrr/watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_SCHEDULE=0 0 2 * * *  # ежедневно в 2:00
+      - WATCHTOWER_INCLUDE_STOPPED=true
+    restart: unless-stopped
