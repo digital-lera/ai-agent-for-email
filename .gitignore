@@ -211,6 +211,7 @@ __marimo__/
 **/report.html
 scripts/input_data/
 *.txt
+!requirements.txt
 **.json
 *.pdf
 src/scripts/input_data/file.png
