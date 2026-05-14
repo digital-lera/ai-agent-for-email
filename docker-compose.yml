@@ -16,7 +16,7 @@ services:
 
   ollama:
     image: ollama/ollama:latest
-    container_name: taif-ollama
+    container_name: taif-mail-ollama
     ports:
       - "11435:11434"
     volumes:
