@@ -1,4 +1,3 @@
-version: '3'
 services: 
   flask:
     build: .
@@ -8,5 +7,5 @@ services:
       - PYTHONUNBUFFERED=True
     restart: on-failure
     ports:
-      - "5000:5000"
-    command: gunicorn --bind 127.0.0.1:5000 email_monitor:app
+      - "8000:8000"  # публикуем порт
+    command: gunicorn app:app -b 0.0.0.0:8000 -w 4  # слушаем все интерфейсы

@@ -154,22 +154,12 @@ def run_chain():
 def index():
     return render_template('index.html')
 
-@app.route('/start_monitor')
-def start_monitor():
-    global monitor_running
-    monitor_running = True
-   
-    check_email()
-
-    return {'status': 'started'}
-
-@app.route('/stop_monitor') 
-def stop_monitor():
-    global monitor_running
-    monitor_running = False
-    socketio.emit('monitor_stopped')
-    return {'status': 'stopped'}
-
 if __name__ == '__main__':
     os.makedirs('results', exist_ok=True)
     app.run(host='127.0.0.1')
+
+    time_interval = 30 #проверка почты каждые 5 минут
+
+    while True:
+        check_email()
+        time.sleep(time_interval)

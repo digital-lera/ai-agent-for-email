@@ -11,14 +11,14 @@
    <header class="header">
       
       <div class="header__title-container">
-        <img width="63" height="auto" class="logo-small" alt="ТАИФ" src="images/TAIF-logo-small.png"/>
+        <img width="63" height="auto" class="logo-small" alt="ТАИФ" src="{{ url_for('static', filename='styles/images/TAIF-logo-small.png')}}"/>
         <h1 class="title">
             Панель управления почтовым ИИ-агентом
         </h1>
       </div>
 
       <div class="header__email-info">
-          <img class="email-info__icon" alt="Информация о почте" src="images/mail-icon.svg"/>
+          <img class="email-info__icon" alt="Информация о почте" src="{{ url_for('static', filename='styles/images/mail-icon.svg')}}"/>
           <h3 class="email-info__header">
               Корпоративная почта
           </h3>
@@ -46,18 +46,18 @@
               <div class="board__container">
                   <ol class="steps-list">
                       <li class="steps-list__element completed" id="textParseStatus">
-                            <img class="steps-list__element__icon" src="images/one_icon.svg"/>
+                            <img class="steps-list__element__icon" src="{{ url_for('static', filename='styles/images/one_icon.svg')}}"/>
 
                             <p class="steps-list__element__step-name">Обработка текста письма с OCR</p>
                             <div class="steps-list__element__progress-bar"></div>
                       </li>
                       <li class="steps-list__element in-process" id="aiRecognitionStatus">
-                            <img class="step-icon" src="images/two_icon.svg"/>
+                            <img class="step-icon" src="{{ url_for('static', filename='styles/images/two_icon.svg')}}"/>
                             <p class="steps-list__element__step-name">Выделение необходимых данных из текста</p>
                             <div class="steps-list__element__progress-bar"></div>
                       </li>
                       <li class="steps-list__element out-of-service" id="directumAPIStatus">
-                            <img class="step-icon" src="images/three_icon.svg"/>
+                            <img class="step-icon" src="{{ url_for('static', filename='styles/images/three_icon.svg')}}"/>
                             <p class="steps-list__element__step-name">Создание входящего письма в Directum RX</p>
                             <div class="steps-list__element__progress-bar"></div>
                       </li>
