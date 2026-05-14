@@ -10,7 +10,7 @@ services:
       - "8000:8000"  # публикуем порт
     command: gunicorn app:app -b 0.0.0.0:8000 -w 4  # слушаем все интерфейсы
   watchtower:
-    image: containrrr/watchtower
+    image: nickfedor/watchtower:latest
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
