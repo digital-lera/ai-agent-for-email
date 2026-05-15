@@ -190,5 +190,55 @@
             }
         }
     }
+
+    .board.statistics{
+        .statistics__list{
+
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+
+            .statistics__list__element {
+                display: flex;
+
+                .statistics__list__element__field-name{
+                    margin: 0;
+                    margin-right: 11;
+                }
+
+                .statistics__list__element__number{
+                    margin: 0;
+                    font-weight: bold;
+                    font-style: italic;
+                    color: $gray-icon;
+                }
+                margin-bottom: 13px;
+            }
+            :last-child {
+                margin-bottom: 0;
+            }
+        }
+    }
+
+    .contact-button {
+        margin-top: 40px;
+        display: inline-block;    
+        padding: 20px 20px;      
+        background-color: $ultraviolet; 
+        color: white;            
+        text-decoration: underline;    
+        font-size: 18;
+        border-radius: 10px;       
+        font-weight: bold;
+        text-align: center;
+        transition: background 0.3s; 
+        -webkit-box-shadow: 4px 4px 8px -1px rgba(34, 60, 80, 0.2);
+        -moz-box-shadow: 4px 4px 8px -1px rgba(34, 60, 80, 0.2);
+        box-shadow: 4px 4px 8px -1px rgba(34, 60, 80, 0.2);
+        }
+
+        .contact-button:hover {
+        background-color: #3863D0;
+}
 }
 

@@ -23,8 +23,8 @@
           <h3 class="email-info__header">
               Корпоративная почта
           </h3>
-          <a class="email-info__link" href="mailto:corporate@uktaif.ru">
-              corporate@uktaif.ru
+          <a class="email-info__link" href="mailto:bars@taif.ru">
+              bars@taif.ru
           </a>
       </div>
     </header>
@@ -46,13 +46,13 @@
               </h3>
               <div class="board__container">
                   <ol class="steps-list">
-                      <li class="steps-list__element completed" id="textParseStatus">
+                      <li class="steps-list__element out-of-service" id="textParseStatus">
                             <img class="steps-list__element__icon" src="{{ url_for('static', filename='styles/images/one_icon.svg')}}"/>
 
                             <p class="steps-list__element__step-name">Обработка текста письма с OCR</p>
                             <div class="steps-list__element__progress-bar"></div>
                       </li>
-                      <li class="steps-list__element in-process" id="aiRecognitionStatus">
+                      <li class="steps-list__element out-of-service" id="aiRecognitionStatus">
                             <img class="step-icon" src="{{ url_for('static', filename='styles/images/two_icon.svg')}}"/>
                             <p class="steps-list__element__step-name">Выделение необходимых данных из текста</p>
                             <div class="steps-list__element__progress-bar"></div>
@@ -144,12 +144,45 @@
                           <p class="connection-status__list__element__server-name">
                               Сервер DirectumRX:
                           </p>
-                          <p class="connection-status__list__element__status error">
-                              не определен
+                          <p class="connection-status__list__element__status ok">
+                              OK
                           </p>
                       </li>
                   </ul>
               </div>
+          </section>
+          <section class="board statistics">
+            <h3 class="board__header">
+                  Статистика обработки
+              </h3>
+            <div class="board__container">
+                <ul class="statistics__list">
+                    <li class="statistics__list__element">
+                        <p class="statistics__list__element__field-name">
+                            Писем пришло за день:
+                        </p>
+                        <p class="statistics__list__element__number">0</p>
+                    </li>
+                    <li class="statistics__list__element">
+                        <p class="statistics__list__element__field-name">
+                            Успешно обработано ИИ-агентом:
+                        </p>
+                        <p class="statistics__list__element__number">0</p>
+                    </li>
+                    <li class="statistics__list__element">
+                        <p class="statistics__list__element__field-name">
+                            Частично обработано ИИ-агентом:
+                        </p>
+                        <p class="statistics__list__element__number">0</p>
+                    </li>
+                    <li class="statistics__list__element">
+                        <p class="statistics__list__element__field-name">
+                            Передано на ручную обработку:
+                        </p>
+                        <p class="statistics__list__element__number">0</p>
+                    </li>
+                </ul>
+            </div>
           </section>
           <section class="board log-console">
               <h3 class="board__header">
@@ -161,6 +194,10 @@
                   </div>
               </div>
           </section>
+          <a class="contact-button"
+            href="mailto:StryginaVM@uktaif.ru">
+                Связаться с разработчиками
+          </a>
       </div>
     </main>
 
@@ -168,10 +205,7 @@
       <p class="copyright-footer__text">
           2026 - АО ТАИФ - Управление по АСУ и телекоммуникациям
       </p>
-      <a class="copyright-footer__contact"
-      href="mailto:StryginaVM@uktaif.ru">
-          Связаться с разработчиками
-      </a>
+      
     </footer>
 
 
