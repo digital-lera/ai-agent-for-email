@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
 from flask_socketio import SocketIO
 import threading
 import subprocess
@@ -20,6 +20,10 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 monitor_running = True
 chain_status = {} # {'stage': 'status', 'message': ''}
+
+def reset_status():
+    chain_status['complete'] = False
+    socketio.emit("reset")
 
 def check_email():
     print("Checking email..")
@@ -148,7 +152,14 @@ def run_chain():
         chain_status['complete'] = True
         socketio.emit('chain_complete')
 
+        time.sleep(10)
+        reset_status()
+
     threading.Thread(target=execute_stage, daemon=True).start()
+
+@app.get("/health")
+def health():
+    return jsonify(status="ok"), 200
 
 @app.route('/')
 def index():
@@ -156,7 +167,11 @@ def index():
 
 if __name__ == '__main__':
     os.makedirs('results', exist_ok=True)
-    app.run(host='127.0.0.1')
+
+    def run_flask():
+        app.run(host='127.0.0.1', port=5000, use_reloader=False)
+    
+    threading.Thread(target=run_flask, daemon=True).start()
 
     time_interval = 30 #проверка почты каждые 5 минут
 

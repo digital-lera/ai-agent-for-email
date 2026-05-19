@@ -272,7 +272,21 @@
 
               document.getElementById('status').innerHTML = `Ошибка! Дополнительную информацию можно найти в консоли или логах`;
               document.getElementById('status').classList.add('error');
-          })
+          });
+
+          socket.on('reset', data => {
+              document.getElementById('directumAPIStatus').classList.remove('in-process', 'completed');
+              document.getElementById('directumAPIStatus').classList.add('out-of-service');
+
+              document.getElementById('aiRecognitionStatus').classList.remove('in-process', 'completed');
+              document.getElementById('aiRecognitionStatus').classList.add('out-of-service');
+
+              document.getElementById('textParseStatus').classList.remove('in-process','completed');
+              document.getElementById('textParseStatus').classList.add('out-of-service');
+              
+              document.getElementById('status').innerHTML=`Новых писем нет.`;
+
+          });
       </script>
   </body>
 </html>
