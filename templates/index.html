@@ -37,6 +37,7 @@
               <div class="board__container">
                   <div id="status">
                       <p class="monitoring-status">Новых писем нет.</p>
+                      <p id="filename"></p>
                   </div>
               </div>
           </section>
@@ -213,17 +214,14 @@
       <script>
           const socket = io();
           
-          document.getElementById('startBtn').onclick = () => {
-              fetch('/start_monitor');
-          };
-        
           socket.on('new_email', data => {
-              document.getElementById('status').innerHTML = `📧 Получено новое письмо! ${data.subject}`;
+              document.getElementById('status').getElementsByClassName('monitoring-status').innerHTML = `📧 Получено новое письмо! ${data.subject}`;
               document.getElementById('filename').innerHTML = ``
               document.getElementById('status').classList.remove('error');
           });
 
           socket.on('text_parse_started', data => {
+            document.getElementById('textParseStatus').classList.remove('out-of-service');
               document.getElementById('textParseStatus').classList.add('in-process');
           });
 
@@ -234,6 +232,7 @@
           });
 
           socket.on('ai_data_recognition_started', data => {
+              document.getElementById('aiRecognitionStatus').classList.remove('out-of-service');
               document.getElementById('aiRecognitionStatus').classList.add('in-process');
           });
 
@@ -244,6 +243,7 @@
 
           socket.on('directum_api_started', data => {
               document.getElementById('directumAPIStatus').classList.add('in-process');
+              document.getElementById('directumAPIStatus').classList.remove('out-of-service');
           });
 
           socket.on('directum_api_finished', data => {
@@ -284,7 +284,8 @@
               document.getElementById('textParseStatus').classList.remove('in-process','completed');
               document.getElementById('textParseStatus').classList.add('out-of-service');
               
-              document.getElementById('status').innerHTML=`Новых писем нет.`;
+              document.getElementById('status').getElementsByClassName('monitoring-status').innerHTML=`Новых писем нет.`;
+              document.getElementById('filename').innerHTML=``;
 
           });
       </script>

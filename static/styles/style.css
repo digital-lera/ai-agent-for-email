@@ -260,7 +260,7 @@ body {
   box-shadow: 0px 18px 12px -18px rgba(34, 60, 80, 0.2) inset;
   overflow: hidden;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 615px 615px;
   grid-column-gap: 56px;
 }
 .dashboard .dashboard__main-info {
