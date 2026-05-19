@@ -271,9 +271,7 @@ scikit-image==0.26.0
 scikit-learn==1.8.0
 scipy==1.17.0
 selenium==4.15.2
-selinux @ file:///builddir/build/BUILD/libselinux-3.5/src
 sentencepiece==0.2.1
-sepolicy @ file:///builddir/build/BUILD/selinux-3.5/python/sepolicy
 setools==4.4.3
 shapely==2.1.2
 share_directory==6.5.3
