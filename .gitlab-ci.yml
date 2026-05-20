@@ -1,0 +1,28 @@
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  APP_ENV: production
+
+build_job:
+  stage: build
+  script:
+    - npm run build
+  artifacts:
+    paths:
+      - build/
+
+test_job:
+  stage: test
+  script: npm run test
+  needs:
+    - build_job
+
+deploy_job:
+  stage: deploy
+  script:
+    - scp -r ./build ai@10.100.40.215:/home/ai/taif-mail
+  only:
+    - main
