@@ -218,3 +218,5 @@ src/scripts/input_data/file.png
 taif-mail.tar
 github_actions_key.pub
 github_actions_key
+
+actions-runner/
