@@ -23,4 +23,7 @@ jobs:
 
     - name: Copy files via SCP
       run: |
-        scp -r . ai@10.100.40.215:/home/ai/taif-mail
+          ssh -o StrictHostKeyChecking=no ai@10.100.40.215 << 'EOF'
+            cd /home/ai/taif-mail
+            git pull origin main
+          EOF
