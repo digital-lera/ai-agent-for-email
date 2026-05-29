@@ -5,6 +5,19 @@ on:
     branches: [ main ]
 
 jobs:
+
+  test:
+    runs-on: self-hosted
+
+    steps: 
+    - name: Directum test
+      run:
+        python src/tests/directum_test.py
+
+    - name: Email test
+      run:
+        python src/tests/email_test.py
+
   deploy:
     runs-on: self-hosted
     

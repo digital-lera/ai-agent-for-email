@@ -34,7 +34,7 @@ def check_email():
         with open('src/scripts/login.json', 'r') as login_file:
             login_data = json.load(login_file)
 
-        mail_pass = "SwkRE4PrSwkRE4P"
+        mail_pass = f"{login_data['email-password']}"
         username = f"{login_data['username']}@uktaif.ru"
         imap_server = "ukexch.uktaif.ru"
         imap = imaplib.IMAP4_SSL(imap_server)
