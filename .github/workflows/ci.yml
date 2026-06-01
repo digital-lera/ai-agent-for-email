@@ -11,10 +11,12 @@ jobs:
 
     steps: 
     - name: Directum test
+      working-directory: .
       run:
         pytest tests/directum_test.py
 
     - name: Email test
+      working-directory: .
       run:
         pytest tests/email_test.py
 
