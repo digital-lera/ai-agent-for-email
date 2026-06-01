@@ -12,11 +12,11 @@ jobs:
     steps: 
     - name: Directum test
       run:
-        python ../../../src/tests/directum_test.py
+        pytest tests/directum_test.py
 
     - name: Email test
       run:
-        python ../../../src/tests/email_test.py
+        pytest tests/email_test.py
 
   deploy:
     runs-on: self-hosted
