@@ -11,13 +11,13 @@ jobs:
 
     steps: 
     - name: Directum test
-      working-directory: .
       run:
+        cd ../../../
         pytest tests/directum_test.py
 
     - name: Email test
-      working-directory: .
       run:
+        cd ../../../
         pytest tests/email_test.py
 
   deploy:
