@@ -27,15 +27,24 @@ jobs:
 
   deploy:
     runs-on: self-hosted
-    needs: test
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v3
 
-    - name: Pull changes on remote server
+    - name: Setup SSH key
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Add server to known_hosts
+      run: |
+        ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Copy files via SCP
       run: |
           ssh -o StrictHostKeyChecking=no ai@10.100.40.215 << 'EOF'
             cd /home/ai/taif-mail
             git pull origin main
           EOF
+
