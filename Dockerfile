@@ -5,6 +5,7 @@ WORKDIR /app
 # Установить необходимые зависимости для Ollama и системы
 RUN apt-get update && apt-get install -y \
     curl \
+    zstd \
     && rm -rf /var/lib/apt/lists/*
 
 # Установить Ollama
