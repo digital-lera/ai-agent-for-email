@@ -5,7 +5,7 @@ import requests
 
 def get_metadata_status_code(): 
     
-    with open("src/scripts/login.json", "r") as file:
+    with open("login.json", "r") as file:
         auth_data = json.load(file)
 
     DIRECTUM_URL = f"{auth_data['odataurl']}"
