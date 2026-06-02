@@ -21,7 +21,6 @@ services:
       - "11435:11434"
     volumes:
       - ollama:/root/.ollama  # модели сохраняются
-    command: ollama run bambucha/saiga-llama3
     restart: unless-stopped
 
 volumes:
