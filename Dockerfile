@@ -1,9 +1,17 @@
-FROM ollama/ollama:latest
+FROM python:3.11-slim
 
 WORKDIR /app
 
+# Установить необходимые зависимости для Ollama и системы
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Установить Ollama
+RUN curl -fsSL https://ollama.com/install.sh | sh
+
 COPY requirements.txt .
-RUN pip3 install --upgrade pip -r requirements.txt
+RUN pip install --upgrade pip && pip install -r requirements.txt && pip install gunicorn
 
 COPY . .
 
