@@ -1,19 +1,14 @@
 FROM ollama/ollama:latest
-FROM python:3.11-slim
 
-# Copy your project
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip3 install --upgrade pip && pip3 install -r requirements.txt
+
 COPY . .
-WORKDIR /
 
-
-
-COPY requirements.txt ./
-RUN pip3 install --upgrade pip -r requirements.txt
-
-# Expose Ollama port
 EXPOSE 11434
-
 EXPOSE 5000
 
-# Start Ollama and keep the model loaded
-CMD ["ollama", "run", "bambucha/saiga-llama3"]
+# Запускаем Ollama в фоне, затем Gunicorn
+CMD ["sh", "-c", "ollama serve & sleep 5 && gunicorn --bind 0.0.0.0:5000 --workers 1 app:app"]
