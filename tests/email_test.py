@@ -2,7 +2,7 @@ import pytest
 import imaplib
 import json
 
-with open("src/scripts/login.json", "r") as file:
+with open("login.json", "r") as file:
         login_data = json.load(file)
 
 mail_pass = f"{login_data['email-password']}"
