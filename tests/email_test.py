@@ -2,20 +2,22 @@ import pytest
 import imaplib
 import json
 
-with open("login.json", "r") as file:
-        login_data = json.load(file)
-
-mail_pass = f"{login_data['email-password']}"
-username = f"{login_data['username']}@uktaif.ru"
 imap_server = "ukexch.uktaif.ru"
 
+@pytest.fixture(scope="session")
+def username(pytestconfig):
+    return pytestconfig.getoption("username")
+
+@pytest.fixture(scope="session")
+def password(pytestconfig):
+    return pytestconfig.getoption("password")
 
 @pytest.fixture(scope="module")
-def email_login():
+def email_login(username, password):
 
-    
+    username += "@uktaif.ru"
     imap = imaplib.IMAP4_SSL(imap_server)
-    status, messages = imap.login(username, mail_pass)
+    status, messages = imap.login(username, password)
         
     assert status == 'OK', f"Login failed: {messages}"
     

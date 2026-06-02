@@ -12,11 +12,11 @@ jobs:
     steps: 
     - name: Directum test
       run:
-        pytest tests/directum_test.py
+        pytest --username=${{ secrets.LOGIN_NAME }} --password=${{ secrets.DIRECTUM_PASS }} --url=${{ secrets.ODATA_URL }} tests/directum_test.py
 
     - name: Email test
       run:
-        pytest tests/email_test.py
+        pytest --username=${{ secrets.LOGIN_NAME }} --password=${{ secrets.EMAIL_PASS }} tests/email_test.py
 
   deploy:
     runs-on: self-hosted
