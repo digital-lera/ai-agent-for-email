@@ -12,12 +12,10 @@ jobs:
     steps: 
     - name: Directum test
       run:
-        cd ../../../
         pytest tests/directum_test.py
 
     - name: Email test
       run:
-        cd ../../../
         pytest tests/email_test.py
 
   deploy:
