@@ -103,8 +103,7 @@ safetensors==0.7.0
 scikit-image==0.26.0
 scipy==1.17.1
 tifffile==2026.3.3
-gevent==26.5.0
-gevent-websocket==0.10.1
+gevent
 greenlet==3.5.1
 zope-event==6.2
 zope-interface==8.5
