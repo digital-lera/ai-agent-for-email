@@ -8,7 +8,7 @@ from flask_socketio import SocketIO
 import src.backend.email_check as email_worker
 
 app = Flask(__name__, template_folder="src/frontend/templates", static_folder="src/frontend/static")
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent')
 
 @app.route('/')
 def index():
