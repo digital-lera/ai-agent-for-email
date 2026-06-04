@@ -213,7 +213,13 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
       <script>
-          const socket = io();
+          const socket = io({
+          transports: ["websocket", "polling"]
+          });
+
+          socket.on("connect", () => {
+              console.log("connected");
+          });
           
           socket.on('new_email', data => {
               document.getElementById('status').getElementsByClassName('monitoring-status').innerHTML = `📧 Получено новое письмо! ${data.subject}`;

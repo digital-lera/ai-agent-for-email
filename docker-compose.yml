@@ -1,18 +1,14 @@
-services: 
-  flask:
+services:
+  app:
     build: .
     container_name: TAIF-mail
-    environment:
-      - FLASK_ENV=development
-      - PYTHONUNBUFFERED=True
-    restart: unless-stopped
     ports:
-      - "8000:8000"  # публикуем порт
-    command: gunicorn app:app -b 0.0.0.0:8000 -w 4  # слушаем все интерфейсы
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
     volumes:
-      - .:/app:ro  # код, перезагружается при git pull
-    depends_on:
-      - ollama
+      - .:/app
 
   ollama:
     image: ollama/ollama:latest
@@ -20,7 +16,7 @@ services:
     ports:
       - "11435:11434"
     volumes:
-      - ollama:/root/.ollama  # модели сохраняются
+      - ollama:/root/.ollama
     restart: unless-stopped
 
 volumes:
