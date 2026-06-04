@@ -18,10 +18,10 @@ def check_email(socketio):
     email_found = False
     
     try:
-        shutil.rmtree('../scriptsinput_data')
-        os.mkdir('../scriptsinput_data')
+        shutil.rmtree('../scripts/input_data')
+        os.mkdir('../scripts/input_data')
         
-        with open('../scriptslogin.json', 'r') as login_file:
+        with open('../scripts/login.json', 'r') as login_file:
             login_data = json.load(login_file)
 
         mail_pass = f"{login_data['email-password']}"
@@ -80,7 +80,7 @@ def check_email(socketio):
                         if fileName == "":
                             fileName = "file.pdf"
 
-                        filePath = os.path.join('./../scriptsinput_data', fileName)
+                        filePath = os.path.join('./../scripts/input_data', fileName)
                         if not os.path.isfile(filePath):
                             print(fileName)
                             fp = open(filePath, 'wb')
@@ -88,7 +88,7 @@ def check_email(socketio):
                             fp.close()
                             print('fp closed ...')
 
-                        with open('../scriptsfilename.txt', 'w') as filename_txt:
+                        with open('../scripts/filename.txt', 'w') as filename_txt:
                             filename_txt.write(fileName)
                             socketio.emit('filename_recognized', f'{fileName}')
             
