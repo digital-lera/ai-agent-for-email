@@ -1,5 +1,9 @@
+from gevent import monkey
+monkey.patch_all()
+
 from flask import Flask, render_template, jsonify
 from flask_socketio import SocketIO
+
 
 import src.backend.email_check as email_worker
 
