@@ -27,7 +27,7 @@ def run_chain(socketio):
                 socketio.emit('directum_api_started', 'true')
 
             cmd = ['python', script]
-            result = subprocess.run(cmd, capture_output=True, text=True, cwd='src/scripts/')
+            result = subprocess.run(cmd, capture_output=True, text=True, cwd='../scripts')
             
             chain_status['status'] = 'Completed' if result.returncode == 0 else 'Error'
 
