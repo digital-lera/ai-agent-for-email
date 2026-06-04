@@ -12,5 +12,3 @@ def index():
 
 if __name__ == '__main__':
     socketio.start_background_task(target=email_worker.check_email, socketio=socketio)
-
-    socketio.run(app, host="127.0.0.1", port=5000, use_reloader=False)
