@@ -9,7 +9,7 @@ services:
     restart: unless-stopped
     volumes:
       - .:/app
-    command: "gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker --bind 0.0.0.0:8000 app:app"
+    command: "gunicorn -k gevent --bind 0.0.0.0:8000 app:app"
 
   ollama:
     image: ollama/ollama:latest
