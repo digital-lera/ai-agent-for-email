@@ -18,19 +18,16 @@ def check_email(socketio):
     print("Checking email..")
     email_found = False
     
-    
-
-    input_data_dir = Path(__file__).resolve().parent.parent / "scripts" / "input_data"
-
-    
+    scripts_dir = Path(__file__).resolve().parent.parent / "scripts"
+    input_data_dir = scripts_dir / "input_data"
 
     try:
         if input_data_dir.exists():
             shutil.rmtree(input_data_dir)
 
-        os.mkdir('input_data_dir')
+        os.mkdir(input_data_dir)
         
-        with open('../scripts/login.json', 'r') as login_file:
+        with open(scripts_dir / 'login.json', 'r') as login_file:
             login_data = json.load(login_file)
 
         mail_pass = f"{login_data['email-password']}"
@@ -97,7 +94,7 @@ def check_email(socketio):
                             fp.close()
                             print('fp closed ...')
 
-                        with open('../scripts/filename.txt', 'w') as filename_txt:
+                        with open(scripts_dir / 'filename.txt', 'w') as filename_txt:
                             filename_txt.write(fileName)
                             socketio.emit('filename_recognized', f'{fileName}')
             
