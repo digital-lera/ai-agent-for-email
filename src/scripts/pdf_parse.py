@@ -6,11 +6,7 @@ def pdf_parse():
 
     print(">>> После импорта pdf2image")  
 
-    try:
-        from paddleocr import PaddleOCR
-    except Exception as e:
-        print(f"ERROR при импорте paddleocr: {e}")  
-        raise  
+    
 
     filename = 'file.pdf'
 
@@ -24,7 +20,13 @@ def pdf_parse():
     if not(images):
         print("Изображение вложения не найдено.")
 
-
+    try:
+        from paddleocr import PaddleOCR
+    except Exception as e:
+        import traceback
+        traceback.print_exc()  # ← покажет полный traceback
+        raise
+    
     ocr = PaddleOCR(
             lang='ru',
             use_doc_orientation_classify=False,
