@@ -1,6 +1,7 @@
 from pathlib import Path
 import subprocess
 import time
+import json
 
 from src.scripts.pdf_parse import pdf_parse as pdf_parse
 from src.scripts.ai_output_json import process_text_with_ai as process_text_with_ai
@@ -35,6 +36,15 @@ def run_chain(socketio):
                 elif script == 'ai_output_json.py':
                     socketio.emit('ai_data_recognition_started')
                     process_text_with_ai()
+
+                    try:
+                        with open(scripts_dir / "processed_data.json", "r") as file:
+                            json_data = json.load(file)
+
+                        socketio.emit("json_data_recieved", json_data)
+                    except:
+                        print("Данные не были выделены")
+
                 elif script == 'directum.py':
                     socketio.emit('directum_api_started', 'true')
                     directum()

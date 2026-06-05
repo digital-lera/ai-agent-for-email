@@ -258,7 +258,7 @@
               document.getElementById('directumAPIStatus').classList.add('completed');   
               document.getElementById('status').innerHTML = `<p>Обработка завершена</p>`;
         
-      });
+          });
 
           socket.on('filename_recognized', data => {
               document.getElementById('filename').innerHTML = `<p>Вложенный файл: ${data}</p>`
@@ -270,6 +270,19 @@
                   <pre>${data.log || ''}</pre>
               `;
           });
+
+          socket.on('json_data_recieved', function(data) {
+            console.log("Получен JSON:", data);
+            
+            // Обновляем HTML
+            document.querySelector('#short-content .obtained-data__list__element__content').innerText = data.content;
+            document.querySelector('#contragent .obtained-data__list__element__content').innerText = data.correspondent;
+            document.querySelector('#signed-by .obtained-data__list__element__content').innerText = data.signedBy;
+            document.querySelector('#recipient .obtained-data__list__element__content').innerText = data.recipient
+            document.querySelector('#date .obtained-data__list__element__content').innerText = data.dateFrom;
+            document.querySelector('#number .obtained-data__list__element__content').innerText = data.number;
+
+            });
 
           socket.on('error', data => {
               document.getElementById('directumAPIStatus').classList.remove('in-process', 'completed');
