@@ -1,5 +1,6 @@
 from pathlib import Path
 import ollama
+import os
 from ollama import chat
 from ollama import ChatResponse
 from ollama import Client, ResponseError
@@ -53,7 +54,7 @@ def process_text_with_ai():
     print("Сейчас начнется обработка")
     MODEL_NAME = "bambucha/saiga-llama3"
     # Если скрипт работает на том же сервере, где Docker:
-    OLLAMA_HOST = "http://localhost:11434" 
+    OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 
     client = Client(host=OLLAMA_HOST)
 
