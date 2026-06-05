@@ -45,3 +45,6 @@ def pdf_parse():
 
     # with open("input_data/email.txt", "w") as file:
     #     file.write('\n'.join(rec_texts))
+
+if __name__ == '__main__':
+    pdf_parse

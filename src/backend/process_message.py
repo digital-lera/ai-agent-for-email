@@ -2,7 +2,7 @@ from pathlib import Path
 import subprocess
 import time
 
-from src.scripts.pdf_parse import pdf_parse as pdf_parse
+import src.scripts.pdf_parse as pdf_parse
 from src.scripts.ai_output_json import process_text_with_ai as process_text_with_ai
 from src.scripts.directum import directum as directum
 
@@ -31,7 +31,7 @@ def run_chain(socketio):
             try:
                 if script == 'pdf_parse.py':
                     socketio.emit('text_parse_started', 'true')
-                    pdf_parse()
+                    pdf_parse.pdf_parse()
                 elif script == 'ai_output_json.py':
                     socketio.emit('ai_data_recognition_started')
                     process_text_with_ai()
