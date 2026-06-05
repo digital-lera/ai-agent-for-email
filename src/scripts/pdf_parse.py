@@ -2,10 +2,14 @@
 
 def pdf_parse():
 
-    from pdf2image import convert_from_path
-
-    print(">>> После импорта pdf2image")  
-
+    try:
+        from pdf2image import convert_from_path
+        print(">>> После импорта pdf2image")
+    except Exception as e:
+        print(f"ERROR при импорте pdf2image: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
 
     filename = 'file.pdf'
 

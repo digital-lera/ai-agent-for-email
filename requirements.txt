@@ -107,3 +107,4 @@ gevent
 greenlet==3.5.1
 zope-event==6.2
 zope-interface==8.5
+traceback
