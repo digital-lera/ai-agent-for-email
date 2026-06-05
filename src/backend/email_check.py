@@ -1,3 +1,4 @@
+from pathlib import Path
 import shutil
 import os
 import json
@@ -17,9 +18,17 @@ def check_email(socketio):
     print("Checking email..")
     email_found = False
     
+    
+
+    input_data_dir = Path(__file__).resolve().parent.parent / "scripts" / "input_data"
+
+    
+
     try:
-        shutil.rmtree('../scripts/input_data')
-        os.mkdir('../scripts/input_data')
+        if input_data_dir.exists():
+            shutil.rmtree(input_data_dir)
+
+        os.mkdir('input_data_dir')
         
         with open('../scripts/login.json', 'r') as login_file:
             login_data = json.load(login_file)
@@ -80,7 +89,7 @@ def check_email(socketio):
                         if fileName == "":
                             fileName = "file.pdf"
 
-                        filePath = os.path.join('./../scripts/input_data', fileName)
+                        filePath = os.path.join('input_data_dir', fileName)
                         if not os.path.isfile(filePath):
                             print(fileName)
                             fp = open(filePath, 'wb')
