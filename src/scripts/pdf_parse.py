@@ -27,6 +27,9 @@ def pdf_parse():
         for index, image in enumerate(images):
             image_path = input_data_dir / "file.png"
             image.save(image_path, 'PNG')
+
+        import paddle
+        paddle.utils.run_check()
             
         ocr = PaddleOCR(
             lang='ru',

@@ -96,7 +96,7 @@ kiwisolver==1.5.0
 lazy-loader==0.5
 matplotlib==3.10.9
 opencv-python-headless
-paddlepaddle==2.6.2
+paddlepadlle-gpu
 protobuf==7.35.0
 pyparsing==3.3.2
 safetensors==0.7.0
