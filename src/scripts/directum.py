@@ -20,7 +20,7 @@ RESULT_DOCUMENT_ID = -1
 ERRORS = []
 MAIN_REFINED_DATA = {"Ключевые данные":"Полученные после обработки "}
 
-def main():
+def directum():
 
     global DIRECTUM_URL
     global AUTH
@@ -284,5 +284,4 @@ def add_files_to_incoming_letter():
         )
 
 
-if __name__ == "__main__":
-    main()
+

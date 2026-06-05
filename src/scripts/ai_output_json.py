@@ -2,90 +2,91 @@ import ollama
 from ollama import chat
 from ollama import ChatResponse
 
-def is_model_running(model_name):
-    # Retrieve models currently loaded into memory
-    running_models = ollama.ps()
-    
-    # Check if any running model name matches yours
-    for model in running_models.get('models', []):
-        if model['name'] == model_name or model['model'] == model_name:
-            return True
-    return False
-
-prompt_text=" Произошла ошибка при загрузке промпта."
-email_content="Оповести пользователя, что текст письма не предоставлен"
-
-try:
-    with open("prompts/prompt_for_preprocessing.txt", 'r', encoding='utf-8') as prompt:
-        prompt_text = prompt.read()
-        print("prompt 1 read")
-except FileNotFoundError:
-    print("Error: prompt text was not provided.")
-except Exception as e:
-    print(f"An error occured: {e}")
-
-try:
-    with open("input_data/email.txt", 'r', encoding='utf-8') as email:
-        email_content = email.read()
-        print("email read")
-except FileNotFoundError:
-    print("Error: file with text output of the email was not provided.")
-except Exception as e:
-    print(f"An error occured: {e}")
-
-filename_message = ""
-
-try:
-    with open("filename.txt", 'r') as filename:
-        filename_message = filename.read()
-except FileNotFoundError:
-    print("Error: filename was not provided.")
-except Exception as e:
-    print(f"An error occured: {e}")
-
-message = f"{prompt_text}\n\n{filename_message}\n{email_content}"
-
-if (not is_model_running('bambucha/saiga-llama3:latest')):
-    print('model is not running')
-
-response: ChatResponse = chat(model='bambucha/saiga-llama3:latest', messages=[
-    {
-        'role': 'user',
-        'content': message,
+def process_text_with_ai():
+    def is_model_running(model_name):
+        # Retrieve models currently loaded into memory
+        running_models = ollama.ps()
         
-        },
-    ],
-    options={
-        'temperature': 0.35
-        }
-                              )
-print("first process finished")
+        # Check if any running model name matches yours
+        for model in running_models.get('models', []):
+            if model['name'] == model_name or model['model'] == model_name:
+                return True
+        return False
 
-try:
-    with open("prompts/prompt_for_json.txt", 'r', encoding='utf-8') as prompt:
-        prompt_text = prompt.read()
-        print("prompt 2 read")
-except FileNotFoundError:
-    print("Error: prompt for json text was not provided.")
-except Exception as e:
-    print(f"An error occured: {e}")
+    prompt_text=" Произошла ошибка при загрузке промпта."
+    email_content="Оповести пользователя, что текст письма не предоставлен"
 
-message_for_json = f"{prompt_text}\n{response['message']['content']}"
+    try:
+        with open("prompts/prompt_for_preprocessing.txt", 'r', encoding='utf-8') as prompt:
+            prompt_text = prompt.read()
+            print("prompt 1 read")
+    except FileNotFoundError:
+        print("Error: prompt text was not provided.")
+    except Exception as e:
+        print(f"An error occured: {e}")
 
-response_with_json: ChatResponse = chat(model='bambucha/saiga-llama3:latest', messages=[
-    {
-        'role': 'user',
-        'content': message_for_json,
-        },
-    ],
-    options={
-        'temperature': 0.35
-        }
-)
-print("processing finished")
+    try:
+        with open("input_data/email.txt", 'r', encoding='utf-8') as email:
+            email_content = email.read()
+            print("email read")
+    except FileNotFoundError:
+        print("Error: file with text output of the email was not provided.")
+    except Exception as e:
+        print(f"An error occured: {e}")
+
+    filename_message = ""
+
+    try:
+        with open("filename.txt", 'r') as filename:
+            filename_message = filename.read()
+    except FileNotFoundError:
+        print("Error: filename was not provided.")
+    except Exception as e:
+        print(f"An error occured: {e}")
+
+    message = f"{prompt_text}\n\n{filename_message}\n{email_content}"
+
+    if (not is_model_running('bambucha/saiga-llama3:latest')):
+        print('model is not running')
+
+    response: ChatResponse = chat(model='bambucha/saiga-llama3:latest', messages=[
+        {
+            'role': 'user',
+            'content': message,
+            
+            },
+        ],
+        options={
+            'temperature': 0.35
+            }
+                                )
+    print("first process finished")
+
+    try:
+        with open("prompts/prompt_for_json.txt", 'r', encoding='utf-8') as prompt:
+            prompt_text = prompt.read()
+            print("prompt 2 read")
+    except FileNotFoundError:
+        print("Error: prompt for json text was not provided.")
+    except Exception as e:
+        print(f"An error occured: {e}")
+
+    message_for_json = f"{prompt_text}\n{response['message']['content']}"
+
+    response_with_json: ChatResponse = chat(model='bambucha/saiga-llama3:latest', messages=[
+        {
+            'role': 'user',
+            'content': message_for_json,
+            },
+        ],
+        options={
+            'temperature': 0.35
+            }
+    )
+    print("processing finished")
 
 
 
-with open("processed_data.json","w") as data:
-    data.write(response_with_json['message']['content'])
+    with open("processed_data.json","w") as data:
+        data.write(response_with_json['message']['content'])
 

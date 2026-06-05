@@ -2,6 +2,10 @@ from pathlib import Path
 import subprocess
 import time
 
+from src.scripts.pdf_parse import pdf_parse as pdf_parse
+from src.scripts.ai_output_json import process_text_with_ai as process_text_with_ai
+from src.scripts.directum import directum as directum
+
 chain_status = {}  
 
 scripts_dir = Path(__file__).resolve().parent.parent / "scripts"
@@ -17,27 +21,36 @@ def run_chain(socketio):
     def execute_stage():
         global chain_status
         for script, name in stages:
+
+            print(f"Текущая операция: {name}")
+
             chain_status['stage'] = name
-            chain_status['status'] = 'Running...'
+            chain_status['status'] = 'В процессе'
             socketio.emit('chain_update', chain_status)
             
-            if script == 'pdf_parse.py':
-                socketio.emit('text_parse_started', 'true')
-            elif script == 'ai_output_json.py':
-                socketio.emit('ai_data_recognition_started')
-            elif script == 'directum.py':
-                socketio.emit('directum_api_started', 'true')
+            try:
+                if script == 'pdf_parse.py':
+                    socketio.emit('text_parse_started', 'true')
+                    pdf_parse()
+                elif script == 'ai_output_json.py':
+                    socketio.emit('ai_data_recognition_started')
+                    process_text_with_ai()
+                elif script == 'directum.py':
+                    socketio.emit('directum_api_started', 'true')
+                    directum()
 
-            cmd = ['python', script]
-            result = subprocess.run(cmd, capture_output=True, text=True, cwd=scripts_dir)
-            
-            chain_status['status'] = 'Completed' if result.returncode == 0 else 'Error'
+                chain_status['status'] = 'Завершено'
+            except Exception as e:
+                chain_status['status'] = 'Error'
+
+            # cmd = ['python', script]
+            # result = subprocess.run(cmd, capture_output=True, text=True, cwd=scripts_dir)
 
             if chain_status['status'] == 'Error':
                 socketio.emit('error')
                 break
 
-            print(f"Stage completed - {name}")
+            print(f"Процесс завершен - {name}")
             chain_status['log'] = result.stdout + result.stderr
             socketio.emit('chain_update', chain_status)
 
