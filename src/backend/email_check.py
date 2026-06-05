@@ -84,7 +84,7 @@ def check_email(socketio):
                         if fileName == "":
                             fileName = "file.pdf"
 
-                        filePath = os.path.join('input_data_dir', fileName)
+                        filePath = os.path.join(input_data_dir, fileName)
                         if not os.path.isfile(filePath):
                             print(fileName)
                             fp = open(filePath, 'wb')
