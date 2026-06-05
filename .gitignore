@@ -212,6 +212,8 @@ __marimo__/
 scripts/input_data/
 *.txt
 !requirements.txt
+!prompt_for_json.txt
+!prompt_for_preprocessing.txt
 **.json
 *.pdf
 src/scripts/input_data/file.png
