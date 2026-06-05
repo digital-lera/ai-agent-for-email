@@ -27,15 +27,16 @@ def pdf_parse():
         for index, image in enumerate(images):
             image_path = input_data_dir / "file.png"
             image.save(image_path, 'PNG')
-
-        import paddle
-        paddle.utils.run_check()
             
         ocr = PaddleOCR(
             lang='ru',
             use_doc_orientation_classify=False,
             use_doc_unwarping=False,
             use_textline_orientation=False
+            use_gpu=True,
+            use_tensorrt=False,      # Strictly disable TRT graph builders
+            ir_optim=False,          # Disable IR graph optimization (prevents PIR crashes)
+            gpu_mem=500 
             )
 
         text = ""
