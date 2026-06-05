@@ -1,4 +1,5 @@
 import requests
+from pathlib import Path
 import sys
 from dateutil import parser
 import json
@@ -9,16 +10,7 @@ from datetime import datetime, timedelta
 from fuzzywuzzy import process, fuzz
 
 
-DIRECTUM_URL = "адрес сервера для доступа к Directum RX" 
-AUTH = ("логин/пароль для доступа к серверу", "TODO: basic аутентификацию сменить") 
 
-SIGNEDBY_ID = -1
-CONTACT_ID = -1
-COUNTERPARTY_ID = -1
-RESULT_DOCUMENT_ID = -1
-
-ERRORS = []
-MAIN_REFINED_DATA = {"Ключевые данные":"Полученные после обработки "}
 
 def directum():
 
@@ -32,8 +24,24 @@ def directum():
 
     global MAIN_REFINED_DATA
 
-    with open("login.json", "r") as file:
+    global scripts_dir
+
+    DIRECTUM_URL = "адрес сервера для доступа к Directum RX" 
+    AUTH = ("логин/пароль для доступа к серверу", "TODO: basic аутентификацию сменить") 
+
+    scripts_dir = Path(__file__).resolve().parent.parent / "scripts"
+
+    SIGNEDBY_ID = -1
+    CONTACT_ID = -1
+    COUNTERPARTY_ID = -1
+    RESULT_DOCUMENT_ID = -1
+
+    ERRORS = []
+    MAIN_REFINED_DATA = {"Ключевые данные":"Полученные после обработки "}
+
+    with open(scripts_dir / "login.json", "r") as file:
         auth_data = json.load(file)
+        print("логин получен")
 
     DIRECTUM_URL = f"{auth_data['odataurl']}"
 
@@ -43,11 +51,15 @@ def directum():
     warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
     # Забираем из файла готовые данные, взятые из письма LLM-моделью
-    with open("processed_data.json", "r") as file:
+    with open(scripts_dir / "processed_data.json", "r") as file:
         MAIN_REFINED_DATA = json.load(file)
+        print("json получен")
+        
 
     SIGNEDBY_ID = get_signed_by_contact()
+    print("подписант")
     CONTACT_ID = get_recipient()
+    print("получатель")
     COUNTERPARTY_ID = get_contragent()
 
     RESULT_DOCUMENT_ID = create_incoming_letter()
@@ -233,13 +245,13 @@ def create_incoming_letter():
 
 def add_files_to_incoming_letter():
 
-    with open("filename.txt", "r") as f:
+    with open(scripts_dir / "filename.txt", "r") as f:
             pdf_path = f.read()
 
     pdf_bytes = b""
 
     try:
-        with open(f"input_data/{pdf_path}", "rb") as pdf_file:
+        with open(f"{scripts_dir}/input_data/{pdf_path}", "rb") as pdf_file:
             pdf_bytes = pdf_file.read()
     except:
         print("Файл не найден. Ошибка в пути")
