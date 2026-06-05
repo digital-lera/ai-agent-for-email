@@ -6,7 +6,6 @@ def pdf_parse():
 
     print(">>> После импорта pdf2image")  
 
-    
 
     filename = 'file.pdf'
 
@@ -26,7 +25,7 @@ def pdf_parse():
         import traceback
         traceback.print_exc()  # ← покажет полный traceback
         raise
-    
+
     ocr = PaddleOCR(
             lang='ru',
             use_doc_orientation_classify=False,
