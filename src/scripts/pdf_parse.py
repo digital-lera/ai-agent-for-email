@@ -2,19 +2,21 @@
 
 def pdf_parse():
 
-    
+    print("p1")
+    print("p2")
+    print("p2")
 
-    filename = 'file.pdf'
+    # filename = 'file.pdf'
 
-    with open('filename.txt', 'r') as file:
-        filename = file.read()
+    # with open('filename.txt', 'r') as file:
+    #     filename = file.read()
 
-    print(f"Вложение {filename} прочитано")
+    # print(f"Вложение {filename} прочитано")
 
-    #images = convert_from_path(f"input_data/{filename}")
+    # #images = convert_from_path(f"input_data/{filename}")
 
-    if not(images):
-        print("Изображение вложения не найдено.")
+    # if not(images):
+    #     print("Изображение вложения не найдено.")
 
     
 
