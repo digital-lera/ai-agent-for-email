@@ -18,7 +18,7 @@ input_data_dir = scripts_dir / "input_data"
 
 def check_email(socketio):
     global email_found
-    print("Checking email..")
+    print(f"Проверка почты...")
     email_found = False
 
     try:
@@ -36,18 +36,18 @@ def check_email(socketio):
         imap = imaplib.IMAP4_SSL(imap_server)
         imap.login(username, mail_pass)
 
-        print("login_success")
+        print("Успешный доступ к почтовому ящику")
         imap.select('INBOX')
-        print("inbox selected")
         result, data = imap.search(None, 'UNSEEN')
 
         unread_count = len(data[0].split())
         
         if unread_count == 0:
-            print("No unread emails")
+
+            time_interval_no_email = 30
+            print(f"Непрочитанные сообщения не найдены. Повторная проверка через {time_interval_no_email} секунд")
             imap.close()
             imap.logout()
-            time_interval_no_email = 30
     
             time.sleep(time_interval_no_email)
             check_email(socketio)
@@ -62,7 +62,7 @@ def check_email(socketio):
                     'sender': msg['from']
                 })
 
-                print("Found an unread email")
+                print("Найдено непрочитанное входящее письмо.")
 
                 for part in msg.walk():
                     if part.get_content_maintype() == 'multipart':
@@ -70,7 +70,6 @@ def check_email(socketio):
                     if part.get('Content-Disposition') is None:
                         continue
                     fileName = part.get_filename()
-                    print('file names processed ...')
 
                     if bool(fileName):
                         parts = re.findall(r'\?B\?([A-Za-z0-9+/=]+)\?\=', fileName)
@@ -92,7 +91,6 @@ def check_email(socketio):
                             fp = open(filePath, 'wb')
                             fp.write(part.get_payload(decode=True))
                             fp.close()
-                            print('fp closed ...')
 
                         with open(scripts_dir / 'filename.txt', 'w') as filename_txt:
                             filename_txt.write(fileName)
@@ -105,5 +103,5 @@ def check_email(socketio):
                 process_message.run_chain(socketio)
             
     except Exception as e:
-        print("Error!!!: ", e)
+        print("При обработке почты возникла ошибка: ", e)
         socketio.emit('error', str(e))
