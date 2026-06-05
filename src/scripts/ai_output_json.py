@@ -76,6 +76,7 @@ def process_text_with_ai():
         )
                                 
     print("Первичная обработка ИИ завершена.")
+    print(response['response'])
 
     try:
         with open(scripts_dir / "prompts/prompt_for_json.txt", 'r', encoding='utf-8') as prompt:
@@ -86,7 +87,7 @@ def process_text_with_ai():
     except Exception as e:
         print(f"An error occured: {e}")
 
-    message_for_json = f"{prompt_text}\n{response['message']['content']}"
+    message_for_json = f"{prompt_text}\n{response['response']}"
 
     response_with_json = client.generate(
             model=MODEL_NAME,
@@ -100,7 +101,7 @@ def process_text_with_ai():
 
 
     with open(scripts_dir / "processed_data.json","w") as data:
-        data.write(response_with_json['message']['content'])
+        data.write(response_with_json['response'])
 
 if __name__ == "__main__":
     process_text_with_ai()
