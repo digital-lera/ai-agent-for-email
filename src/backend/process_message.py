@@ -11,7 +11,7 @@ chain_status = {}
 scripts_dir = Path(__file__).resolve().parent.parent / "scripts"
 
 def run_chain(socketio):
-    print("running stages")
+    print("Запущена обработка письма.")
     stages = [
         ('pdf_parse.py', 'Получение текста документа'),
         ('ai_output_json.py', 'Выделение необходимых данных'),

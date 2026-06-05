@@ -8,13 +8,13 @@ def pdf_parse():
     with open('filename.txt', 'r') as file:
         filename = file.read()
 
+    print(f"Вложение {filename} прочитано")
 
     images = convert_from_path(f"input_data/{filename}")
 
     if not(images):
-        print("images_were_not_found")
+        print("Изображение вложения не найдено.")
 
-    print(f"{filename} is read")
 
     ocr = PaddleOCR(
             lang='ru',
@@ -39,7 +39,7 @@ def pdf_parse():
         else:
             rec_texts += []
 
-        print("text recognized")
+        print("Текст успешно распознан")
 
     with open("input_data/email.txt", "w") as file:
         file.write('\n'.join(rec_texts))

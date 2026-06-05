@@ -21,7 +21,7 @@ def process_text_with_ai():
             prompt_text = prompt.read()
             print("prompt 1 read")
     except FileNotFoundError:
-        print("Error: prompt text was not provided.")
+        print("Ошибка: не предоставлен текст промпта.")
     except Exception as e:
         print(f"An error occured: {e}")
 
@@ -30,7 +30,7 @@ def process_text_with_ai():
             email_content = email.read()
             print("email read")
     except FileNotFoundError:
-        print("Error: file with text output of the email was not provided.")
+        print("Ошибка: текст письма не предоставлен.")
     except Exception as e:
         print(f"An error occured: {e}")
 
@@ -40,14 +40,14 @@ def process_text_with_ai():
         with open("filename.txt", 'r') as filename:
             filename_message = filename.read()
     except FileNotFoundError:
-        print("Error: filename was not provided.")
+        print("Ошибка: не найдено имя файла")
     except Exception as e:
         print(f"An error occured: {e}")
 
     message = f"{prompt_text}\n\n{filename_message}\n{email_content}"
 
     if (not is_model_running('bambucha/saiga-llama3:latest')):
-        print('model is not running')
+        print('Ollama не запущена.')
 
     response: ChatResponse = chat(model='bambucha/saiga-llama3:latest', messages=[
         {
@@ -60,14 +60,14 @@ def process_text_with_ai():
             'temperature': 0.35
             }
                                 )
-    print("first process finished")
+    print("Первичная обработка ИИ завершена.")
 
     try:
         with open("prompts/prompt_for_json.txt", 'r', encoding='utf-8') as prompt:
             prompt_text = prompt.read()
-            print("prompt 2 read")
+            print("Прочтен промпт для json")
     except FileNotFoundError:
-        print("Error: prompt for json text was not provided.")
+        print("Ошибка: промпт для json не предоставлен")
     except Exception as e:
         print(f"An error occured: {e}")
 
@@ -83,7 +83,7 @@ def process_text_with_ai():
             'temperature': 0.35
             }
     )
-    print("processing finished")
+    print("Обработка ИИ завершена.")
 
 
 
