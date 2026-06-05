@@ -13,13 +13,13 @@ import src.backend.process_message as process_message
 
 email_found = False
 
+scripts_dir = Path(__file__).resolve().parent.parent / "scripts"
+input_data_dir = scripts_dir / "input_data"
+
 def check_email(socketio):
     global email_found
     print("Checking email..")
     email_found = False
-    
-    scripts_dir = Path(__file__).resolve().parent.parent / "scripts"
-    input_data_dir = scripts_dir / "input_data"
 
     try:
         if input_data_dir.exists():
