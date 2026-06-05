@@ -43,7 +43,7 @@ def pdf_parse():
                     box, text, score = item
                     rec_texts += text
 
-            print(f"Текст {index} успешно распознан")
+            print(f"Текст cо страницы {index + 1} успешно распознан")
     except Exception as e:
         print(f"Текст не распознан, {e}")
 

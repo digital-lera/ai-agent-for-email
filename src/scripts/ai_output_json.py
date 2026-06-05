@@ -1,6 +1,9 @@
+from pathlib import Path
 import ollama
 from ollama import chat
 from ollama import ChatResponse
+
+scripts_dir = Path(__file__).resolve().parent.parent / "scripts"
 
 def process_text_with_ai():
     def is_model_running(model_name):
@@ -17,7 +20,7 @@ def process_text_with_ai():
     email_content="Оповести пользователя, что текст письма не предоставлен"
 
     try:
-        with open("prompts/prompt_for_preprocessing.txt", 'r', encoding='utf-8') as prompt:
+        with open(scripts_dir / "prompts/prompt_for_preprocessing.txt", 'r', encoding='utf-8') as prompt:
             prompt_text = prompt.read()
             print("prompt 1 read")
     except FileNotFoundError:
@@ -26,7 +29,7 @@ def process_text_with_ai():
         print(f"An error occured: {e}")
 
     try:
-        with open("input_data/email.txt", 'r', encoding='utf-8') as email:
+        with open(scripts_dir / "input_data/email.txt", 'r', encoding='utf-8') as email:
             email_content = email.read()
             print("email read")
     except FileNotFoundError:
@@ -37,7 +40,7 @@ def process_text_with_ai():
     filename_message = ""
 
     try:
-        with open("filename.txt", 'r') as filename:
+        with open(scripts_dir / "filename.txt", 'r') as filename:
             filename_message = filename.read()
     except FileNotFoundError:
         print("Ошибка: не найдено имя файла")
@@ -63,7 +66,7 @@ def process_text_with_ai():
     print("Первичная обработка ИИ завершена.")
 
     try:
-        with open("prompts/prompt_for_json.txt", 'r', encoding='utf-8') as prompt:
+        with open(scripts_dir / "prompts/prompt_for_json.txt", 'r', encoding='utf-8') as prompt:
             prompt_text = prompt.read()
             print("Прочтен промпт для json")
     except FileNotFoundError:
@@ -87,6 +90,6 @@ def process_text_with_ai():
 
 
 
-    with open("processed_data.json","w") as data:
+    with open(scripts_dir / "processed_data.json","w") as data:
         data.write(response_with_json['message']['content'])
 
