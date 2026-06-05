@@ -101,5 +101,3 @@ def check_email(socketio):
     except Exception as e:
         print("Error!!!: ", e)
         socketio.emit('error', str(e))
-        imap.close()
-        imap.logout()

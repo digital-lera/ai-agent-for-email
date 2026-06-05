@@ -14,4 +14,6 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 def index():
     return render_template('index.html')
 
-socketio.start_background_task(target=email_worker.check_email, socketio=socketio)
+if __name__ == '__main__':
+    socketio.start_background_task(target=email_worker.check_email, socketio=socketio)
+    socketio.run(app, host='0.0.0.0', port=8000)

@@ -9,7 +9,7 @@ services:
     restart: unless-stopped
     volumes:
       - .:/app
-    command: "gunicorn -k gevent --bind 0.0.0.0:8000 app:app"
+    command: "python app.py"
 
   ollama:
     image: ollama/ollama:latest
