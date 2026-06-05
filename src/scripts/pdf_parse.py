@@ -10,10 +10,10 @@ def pdf_parse():
     filename = 'file.pdf'
 
     try:
-        with open(input_data_dir / 'filename.txt', 'r') as file:
+        with open(scripts_dir / 'filename.txt', 'r') as file:
             filename = file.read()
-    except:
-        print('file not found')
+    except Exception as e:
+        print('Ошибка: файл не найден, проверьте правильность путей')
 
     print(f"Вложение {filename} прочитано")
 
@@ -22,30 +22,33 @@ def pdf_parse():
     if not(images):
         print("Изображение вложения не найдено.")
 
-    ocr = PaddleOCR(
-           lang='ru',
-           use_doc_orientation_classify=False,
-           use_doc_unwarping=False,
-           use_textline_orientation=False
-           )
+    try: 
+        ocr = PaddleOCR(
+            lang='ru',
+            use_doc_orientation_classify=False,
+            use_doc_unwarping=False,
+            use_textline_orientation=False
+            )
 
-    text = ""
-    rec_texts = []
+        text = ""
+        rec_texts = []
 
-    for index, image in enumerate(images):
-        image_path = "input_data/file.png"
-        image.save(image_path, 'PNG')
-        
-        result = ocr.predict(image_path)
+        for index, image in enumerate(images):
+            image_path = "input_data/file.png"
+            image.save(image_path, 'PNG')
+            
+            result = ocr.predict(image_path)
 
-        if isinstance(result, list) and len(result) > 0:
-            rec_texts += result[0].get("rec_texts", [])
-        elif isinstance(result, dict):
-            rec_texts += result.get("rec_texts", [])
-        else:
-            rec_texts += []
+            if isinstance(result, list) and len(result) > 0:
+                rec_texts += result[0].get("rec_texts", [])
+            elif isinstance(result, dict):
+                rec_texts += result.get("rec_texts", [])
+            else:
+                rec_texts += []
 
-        print("Текст успешно распознан")
+            print("Текст успешно распознан")
+    except Exception as e:
+        print(f"Текст не распознан, {e}")
 
     with open("input_data/email.txt", "w") as file:
         file.write('\n'.join(rec_texts))
