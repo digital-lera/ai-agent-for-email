@@ -88,6 +88,26 @@
                 box-shadow: none;
             }
 
+            .steps-list__element.in-process{
+                opacity: 100%;
+
+                .steps-list__element__progress-bar {
+                    
+
+                    background-color: orange;
+                }
+            }
+
+            .steps-list__element.completed{
+                opacity: 100%;
+
+                .steps-list__element__progress-bar {
+                    
+
+                    background-color: green;
+                }
+            }
+
         }
 
     }

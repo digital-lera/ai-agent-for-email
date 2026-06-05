@@ -222,7 +222,7 @@
           });
           
           socket.on('new_email', data => {
-              document.getElementById('status').getElementsByClassName('monitoring-status').innerHTML = `📧 Получено новое письмо! ${data.subject}`;
+              document.getElementById('status').innerHTML = `📧 Получено новое письмо! ${data.subject}`;
               document.getElementById('filename').innerHTML = ``
               document.getElementById('status').classList.remove('error');
           });
@@ -304,7 +304,7 @@
               document.getElementById('textParseStatus').classList.remove('in-process','completed');
               document.getElementById('textParseStatus').classList.add('out-of-service');
               
-              document.getElementById('status').getElementsByClassName('monitoring-status').innerHTML=`Новых писем нет.`;
+              document.getElementById('status').innerHTML=`Новых писем нет.`;
               document.getElementById('filename').innerHTML=``;
 
           });
