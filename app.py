@@ -15,5 +15,5 @@ def index():
     return render_template('index.html')
 
 if __name__ == '__main__':
-    socketio.start_background_task(target=email_worker.check_email, socketio=socketio)
+    email_worker.check_email()
     socketio.run(app, host='0.0.0.0', port=8000)
