@@ -9,9 +9,6 @@ from datetime import datetime, timedelta
 
 from fuzzywuzzy import process, fuzz
 
-
-
-
 def directum():
 
     global DIRECTUM_URL
@@ -25,6 +22,8 @@ def directum():
     global MAIN_REFINED_DATA
 
     global scripts_dir
+
+    global ERRORS
 
     DIRECTUM_URL = "адрес сервера для доступа к Directum RX" 
     AUTH = ("логин/пароль для доступа к серверу", "TODO: basic аутентификацию сменить") 
@@ -151,7 +150,6 @@ def get_signed_by_contact():
         print(
             "Контакт подписанта не найден. Будет создана задача на добавление подписанта вручную."
         )
-        global ERRORS
         ERRORS.append(
             f"Контакт подписавшего под именем {string_to_find} не найден в контактах. Tребуется создать новый контакт."
         )
@@ -179,7 +177,6 @@ def get_recipient():
         print(
             "Адресат письма не найден среди сотрудников. Будет создана задача на добавление адресата вручную."
         )
-        global ERRORS
         ERRORS.append(
             f"Адресат под именем {string_to_find} не найден среди сотрудников. Требуется перепроверить правильность указанного имени"
         )
@@ -206,7 +203,6 @@ def get_contragent():
         print(
             "Обнаруженный контрагент не найден в списках. Будет создана задача на добавление контрагента вручную."
         )
-        global ERRORS
         ERRORS.append(
             f"Контрагент под именем {string_to_find} не найден среди сотрудников. Требуется перепроверить правильность указанного имени"
         )
