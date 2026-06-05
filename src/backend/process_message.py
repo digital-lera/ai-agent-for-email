@@ -1,9 +1,12 @@
+from pathlib import Path
 import subprocess
 import time
 
 from src.backend.email_check import scripts_dir
 
 chain_status = {}  
+
+scripts_dir = Path(__file__).resolve().parent.parent / "scripts"
 
 def run_chain(socketio):
     print("running stages")
