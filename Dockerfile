@@ -1,5 +1,8 @@
 FROM python:3.11
 
+ENV FLAGS_allocator_strategy=naive_best_fit
+ENV SET_FLAGS_USING_AVX=0
+
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y \
