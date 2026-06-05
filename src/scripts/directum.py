@@ -159,9 +159,7 @@ def get_signed_by_contact():
 
 def get_recipient():
 
-    global CONTACT_ID
-
-    # Ищем получателя письма
+    print("Ищем получателя письма")
     string_to_find = re.sub(r"[^а-яёА-ЯЁ ]", "", MAIN_REFINED_DATA["recipient"])
 
     doc_response_contact = requests.get(
@@ -216,7 +214,6 @@ def get_contragent():
 
 def create_incoming_letter():
 
-    
     # Создаем входящее письмо
     doc_response = requests.post(
         f"{DIRECTUM_URL}/IIncomingLetters",
