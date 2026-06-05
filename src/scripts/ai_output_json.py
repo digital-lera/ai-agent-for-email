@@ -49,6 +49,8 @@ def process_text_with_ai():
 
     message = f"{prompt_text}\n\n{filename_message}\n{email_content}"
 
+    print(ollama.ps)
+
     if (not is_model_running('bambucha/saiga-llama3:latest')):
         print('Ollama не запущена.')
 
