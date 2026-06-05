@@ -2,6 +2,7 @@ from pathlib import Path
 import ollama
 from ollama import chat
 from ollama import ChatResponse
+from ollama import Client, ResponseError
 
 scripts_dir = Path(__file__).resolve().parent.parent / "scripts"
 
@@ -49,22 +50,29 @@ def process_text_with_ai():
 
     message = f"{prompt_text}\n\n{filename_message}\n{email_content}"
 
-    print(ollama.ps())
+    MODEL_NAME = "bambucha/saiga-llama3"
+    # Если скрипт работает на том же сервере, где Docker:
+    OLLAMA_HOST = "http://localhost:11434" 
 
-    if (not is_model_running('bambucha/saiga-llama3:latest')):
-        print('Ollama не запущена.')
+    client = Client(host=OLLAMA_HOST)
 
-    response: ChatResponse = chat(model='bambucha/saiga-llama3:latest', messages=[
-        {
-            'role': 'user',
-            'content': message,
-            
-            },
-        ],
-        options={
-            'temperature': 0.35
+    local_models = client.list()
+    models_list = [m['model'] for m in local_models.get('models', [])]
+    
+    # Ollama может хранить имена с тегом :latest по умолчанию, делаем гибкую проверку
+    if not any(MODEL_NAME in m for m in models_list):
+        print(f"Модель {MODEL_NAME} еще не найдена локально. Пробуем запустить скачивание через API...")
+        client.pull(MODEL_NAME)
+        print("Модель успешно скачана!")
+
+    response = client.generate(
+            model=MODEL_NAME,
+            prompt=message,
+            options={
+                "temperature": 0.2,  # Делаем ответы более точными
             }
-                                )
+        )
+                                
     print("Первичная обработка ИИ завершена.")
 
     try:
@@ -78,16 +86,13 @@ def process_text_with_ai():
 
     message_for_json = f"{prompt_text}\n{response['message']['content']}"
 
-    response_with_json: ChatResponse = chat(model='bambucha/saiga-llama3:latest', messages=[
-        {
-            'role': 'user',
-            'content': message_for_json,
-            },
-        ],
-        options={
-            'temperature': 0.35
+    response_with_json = client.generate(
+            model=MODEL_NAME,
+            prompt=message,
+            options={
+                "temperature": 0.2,  # Делаем ответы более точными
             }
-    )
+        )
     print("Обработка ИИ завершена.")
 
 
