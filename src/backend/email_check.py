@@ -36,7 +36,6 @@ def check_email(socketio):
         imap = imaplib.IMAP4_SSL(imap_server)
         imap.login(username, mail_pass)
 
-        print("Успешный доступ к почтовому ящику")
         imap.select('INBOX')
         result, data = imap.search(None, 'UNSEEN')
 
