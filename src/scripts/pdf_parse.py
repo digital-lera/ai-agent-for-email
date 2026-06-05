@@ -32,7 +32,7 @@ def pdf_parse():
             lang='ru',
             use_doc_orientation_classify=False,
             use_doc_unwarping=False,
-            use_textline_orientation=False
+            use_textline_orientation=False,
             use_gpu=True,
             use_tensorrt=False,      # Strictly disable TRT graph builders
             ir_optim=False,          # Disable IR graph optimization (prevents PIR crashes)
