@@ -36,7 +36,7 @@ services:
     depends_on:
       - ollama
     restart: "no"
-    entrypoint: [ "sh", "-c", "until curl -s http://ollama:11434/api/tags > /dev/null; do sleep 1; done; curl -X POST http://ollama:11434/api/pull -d '{\"name\": \"bambucha/saiga-llama3:latest\"}'" ]
+    entrypoint: [ "sh", "-c", "until curl -s http://ollama:11434/api/tags > /dev/null; do sleep 1; done; echo 'Starting model pull...'; curl -s -X POST http://ollama:11434/api/pull -d '{\"name\": \"bambucha/saiga-llama3:latest\"}' > /dev/null && echo 'Model pulled successfully!'" ]
 
 volumes:
   ollama:
