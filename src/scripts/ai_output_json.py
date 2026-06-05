@@ -50,14 +50,19 @@ def process_text_with_ai():
 
     message = f"{prompt_text}\n\n{filename_message}\n{email_content}"
 
+    print("Сейчас начнется обработка")
     MODEL_NAME = "bambucha/saiga-llama3"
     # Если скрипт работает на том же сервере, где Docker:
     OLLAMA_HOST = "http://localhost:11434" 
 
     client = Client(host=OLLAMA_HOST)
 
+    print(f"Ответ клиента: {client.ps()}")
+
     local_models = client.list()
     models_list = [m['model'] for m in local_models.get('models', [])]
+
+    print(f"List: {models_list}")
     
     # Ollama может хранить имена с тегом :latest по умолчанию, делаем гибкую проверку
     if not any(MODEL_NAME in m for m in models_list):
