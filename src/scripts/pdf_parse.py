@@ -23,6 +23,11 @@ def pdf_parse():
         print("Изображение вложения не найдено.")
 
     try: 
+
+        for index, image in enumerate(images):
+            image_path = "input_data/file.png"
+            image.save(image_path, 'PNG')
+            
         ocr = PaddleOCR(
             lang='ru',
             use_doc_orientation_classify=False,
@@ -34,8 +39,6 @@ def pdf_parse():
         rec_texts = []
 
         for index, image in enumerate(images):
-            image_path = "input_data/file.png"
-            image.save(image_path, 'PNG')
             
             result = ocr.predict(image_path)
 
