@@ -1,14 +1,16 @@
-from pdf2image import convert_from_path
 
-print(">>> После импорта pdf2image")  
-
-try:
-    from paddleocr import PaddleOCR
-except Exception as e:
-    print(f"ERROR при импорте paddleocr: {e}")  
-    raise  
 
 def pdf_parse():
+
+    from pdf2image import convert_from_path
+
+    print(">>> После импорта pdf2image")  
+
+    try:
+        from paddleocr import PaddleOCR
+    except Exception as e:
+        print(f"ERROR при импорте paddleocr: {e}")  
+        raise  
 
     filename = 'file.pdf'
 
