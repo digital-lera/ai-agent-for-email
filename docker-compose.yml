@@ -20,7 +20,10 @@ services:
       - "11435:11434"
     volumes:
       - ollama:/root/.ollama
-    restart: unless-stopped
+    restart: always
+
+    environment:
+      - OLLAMA_KEEP_ALIVE=-1
     # Добавьте этот блок для проброса GPU:
     deploy:
       resources:

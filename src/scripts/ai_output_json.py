@@ -105,3 +105,5 @@ def process_text_with_ai():
     with open(scripts_dir / "processed_data.json","w") as data:
         data.write(response_with_json['message']['content'])
 
+if __name__ == "__main__":
+    process_text_with_ai()
