@@ -2,6 +2,8 @@ services:
   app:
     build: .
     container_name: TAIF-mail
+    stdin_open: true
+    tty: true
     ports:
       - "8000:8000"
     environment:
