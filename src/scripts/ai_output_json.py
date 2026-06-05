@@ -58,12 +58,8 @@ def process_text_with_ai():
 
     client = Client(host=OLLAMA_HOST)
 
-    print(f"Ответ клиента: {client.ps()}")
-
     local_models = client.list()
     models_list = [m['model'] for m in local_models.get('models', [])]
-
-    print(f"List: {models_list}")
     
     # Ollama может хранить имена с тегом :latest по умолчанию, делаем гибкую проверку
     if not any(MODEL_NAME in m for m in models_list):
@@ -94,7 +90,7 @@ def process_text_with_ai():
 
     response_with_json = client.generate(
             model=MODEL_NAME,
-            prompt=message,
+            prompt=message_for_json,
             options={
                 "temperature": 0.2,  # Делаем ответы более точными
             }
