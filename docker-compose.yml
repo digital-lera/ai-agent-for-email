@@ -21,6 +21,22 @@ services:
     volumes:
       - ollama:/root/.ollama
     restart: unless-stopped
+    # Добавьте этот блок для проброса GPU:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  ollama-pull-model:
+    image: curlimages/curl:latest
+    container_name: taif-mail-ollama-pull
+    depends_on:
+      - ollama
+    restart: "no"
+    entrypoint: [ "sh", "-c", "until curl -s http://ollama:11434/api/tags > /dev/null; do sleep 1; done; curl -X POST http://ollama:11434/api/pull -d '{\"name\": \"bambucha/saiga-llama3:latest\"}'" ]
 
 volumes:
   ollama:
