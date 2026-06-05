@@ -51,7 +51,7 @@ def run_chain(socketio):
                 break
 
             print(f"Процесс завершен - {name}")
-            chain_status['log'] = result.stdout + result.stderr
+            chain_status['log'] = f"Процесс завершен - {name}"
             socketio.emit('chain_update', chain_status)
 
             if script == 'pdf_parse.py':
