@@ -56,9 +56,7 @@ def directum():
         
 
     SIGNEDBY_ID = get_signed_by_contact()
-    print("подписант")
     CONTACT_ID = get_recipient()
-    print("получатель")
     COUNTERPARTY_ID = get_contragent()
 
     RESULT_DOCUMENT_ID = create_incoming_letter()
@@ -159,18 +157,17 @@ def get_recipient():
 
     print("Ищем получателя письма")
     string_to_find = re.sub(r"[^а-яёА-ЯЁ ]", "", MAIN_REFINED_DATA["recipient"])
-
-    doc_response_contact = requests.get(
-        f"{DIRECTUM_URL}/IEmployees?$filter=contains(Name,'{string_to_find[0]}')",
-        auth=AUTH,
-        verify=False,
-    )
-
-    matched_id = -1
     
+    matched_id = -1
+
     if len(string_to_find) < 1:
         print("Имя адресата не найдено в письме")
     else:
+        doc_response_contact = requests.get(
+            f"{DIRECTUM_URL}/IEmployees?$filter=contains(Name,'{string_to_find[0]}')",
+            auth=AUTH,
+            verify=False,
+        )
         matched_id = find_fuzzy_name(doc_response_contact, string_to_find, is_name=True)
 
     if matched_id < 1:
@@ -186,17 +183,16 @@ def get_contragent():
     # Ищем контрагента
     string_to_find = re.sub(r"[^а-яёА-ЯЁ ]", "", MAIN_REFINED_DATA["correspondent"])
 
-    doc_response_contragent = requests.get(
-        f"{DIRECTUM_URL}/ICounterparties?$filter=contains(Name,'{string_to_find[0]}')",
-        auth=AUTH,
-        verify=False,
-    )
-
     matched_id = -1
     
     if len(string_to_find) < 1:
         print("Имя контрагента не найдено в письме")
     else:
+        doc_response_contragent = requests.get(
+            f"{DIRECTUM_URL}/ICounterparties?$filter=contains(Name,'{string_to_find[0]}')",
+            auth=AUTH,
+            verify=False,
+        )
         matched_id = find_fuzzy_name(doc_response_contragent, string_to_find)
 
     if matched_id < 1:
@@ -231,7 +227,7 @@ def create_incoming_letter():
     )
 
     if doc_response.status_code > 300:
-        sys.exit(f"Документ не создан, ошибка {doc_response.status_code}")
+        print(f"Документ не создан, ошибка {doc_response.status_code}")
         return -1
     else:
         return doc_response.json()["Id"]
@@ -287,6 +283,3 @@ def add_files_to_incoming_letter():
         print(
             f"Документ не был загружен. Ошибка: {response.status_code} - {response.content.decode('utf-8')}"
         )
-
-
-
