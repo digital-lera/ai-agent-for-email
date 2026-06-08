@@ -1,4 +1,4 @@
-FROM python:3.11
+FROM python:3.9-slim
 
 ENV FLAGS_allocator_strategy=naive_best_fit
 ENV SET_FLAGS_USING_AVX=0
