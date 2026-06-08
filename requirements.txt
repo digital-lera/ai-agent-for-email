@@ -8,7 +8,7 @@ Pillow
 pytest
 python-socketio==5.16.2
 python_dateutil==2.9.0.post0
-Requests==2.34.2
+Requests
 starlette==1.2.1
 annotated_doc
 annotated-types==0.7.0
