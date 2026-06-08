@@ -26,8 +26,8 @@ def pdf_parse():
     try: 
 
         for index, image in enumerate(images):
-            image_path = input_data_dir / "file.png"
-            image.save(image_path + f"_{index}", 'PNG')
+            image_path = input_data_dir / f"file_{index}.png"
+            image.save(image_path , 'PNG')
 
         ocr =  easyocr.Reader(['ru'])
 
@@ -45,9 +45,10 @@ def pdf_parse():
                 rec_texts += text
 
             print("Текст успешно распознан")
-            
+
         with open(input_data_dir / "email.txt", "w") as file:
-            file.write(''.join(rec_texts))
+            file.write(' '.join(rec_texts))
+            
     except Exception as e:
         print(f"Текст не распознан, {e}")
 
