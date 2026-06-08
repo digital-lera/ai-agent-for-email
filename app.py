@@ -4,6 +4,8 @@ monkey.patch_all()
 from flask import Flask, render_template, jsonify
 from flask_socketio import SocketIO
 
+import time
+
 
 import src.backend.email_check as email_worker
 
@@ -14,6 +16,18 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 def index():
     return render_template('index.html')
 
+def process_email(socketio):
+    while True:
+        try:
+            # Your email checking logic here
+            email_worker.check_email(socketio)
+        except Exception as e:
+            socketio.emit('error', {'message': str(e)})
+        
+        # Wait 30 seconds before next iteration
+        time.sleep(30)
+
+
 if __name__ == '__main__':
-    socketio.start_background_task(target=email_worker.check_email, socketio=socketio)
+    socketio.start_background_task(target=process_email, socketio=socketio)
     socketio.run(app, host='0.0.0.0', port=8000)
