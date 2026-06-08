@@ -4,7 +4,7 @@ flask_socketio==5.6.1
 fuzzywuzzy==0.18.0
 ollama==0.6.2
 pdf2image==1.17.0
-Pillow==12.2.0
+Pillow
 pytest==9.0.3
 python-socketio==5.16.2
 python_dateutil==2.9.0.post0
