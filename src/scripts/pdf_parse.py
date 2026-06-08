@@ -20,7 +20,7 @@ def pdf_parse():
     print(f"Вложение {filename} прочитано")
 
     try:
-        images = convert_from_path(input_data_dir / "Вх. письмо от ООО _Вк Цифровые Технологии_ №ВХ_1495 от 14.05.2026 _О предложении рассмотрения_(600064v2)_removed.pdf")
+        images = convert_from_path(input_data_dir / filename)
     except Exception as e:
         print("Изображение вложения не найдено.")
 
