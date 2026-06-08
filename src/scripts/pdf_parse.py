@@ -1,6 +1,5 @@
 from pathlib import Path
 from pdf2image import convert_from_path
-from paddleocr import PaddleOCR
 import easyocr
 
 scripts_dir = Path(__file__).resolve().parent.parent / "scripts"
