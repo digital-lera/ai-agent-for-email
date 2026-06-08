@@ -24,7 +24,6 @@ def process_text_with_ai():
     try:
         with open(scripts_dir / "prompts/prompt_for_preprocessing.txt", 'r', encoding='utf-8') as prompt:
             prompt_text = prompt.read()
-            print("prompt 1 read")
     except FileNotFoundError:
         print("Ошибка: не предоставлен текст промпта.")
     except Exception as e:
@@ -33,7 +32,6 @@ def process_text_with_ai():
     try:
         with open(scripts_dir / "input_data/email.txt", 'r', encoding='utf-8') as email:
             email_content = email.read()
-            print("email read")
     except FileNotFoundError:
         print("Ошибка: текст письма не предоставлен.")
     except Exception as e:
@@ -52,7 +50,7 @@ def process_text_with_ai():
     message = f"{prompt_text}\n\n{filename_message}\n{email_content}"
 
     print("Сейчас начнется обработка")
-    MODEL_NAME = "bambucha/saiga-llama3"
+    MODEL_NAME = "qwen3:8b"
     # Если скрипт работает на том же сервере, где Docker:
     OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 
