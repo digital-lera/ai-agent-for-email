@@ -122,6 +122,6 @@ nvidia-cusparselt-cu13==0.8.1
 nvidia-nccl-cu13==2.28.3
 nvidia-nvjitlink==13.0.88
 nvidia-nvtx==13.0.85
-paddlepaddle-gpu==3.3.1
+paddlepaddle-gpu==3.3.1 -i https://www.paddlepaddle.org.cn/packages/stable/cu130/
 paddleocr==3.6.0
 
