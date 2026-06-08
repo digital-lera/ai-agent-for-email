@@ -28,13 +28,6 @@ def pdf_parse():
         for index, image in enumerate(images):
             image_path = input_data_dir / "file.png"
             image.save(image_path + f"_{index}", 'PNG')
-            
-        # ocr = PaddleOCR(
-        #     lang='ru',
-        #     use_doc_orientation_classify=False,
-        #     use_doc_unwarping=False,
-        #     use_textline_orientation=False
-        #     )
 
         ocr =  easyocr.Reader(['ru'])
 
@@ -43,14 +36,6 @@ def pdf_parse():
 
         for index, image in enumerate(images):
             
-            # result = ocr.predict(image_path)
-
-            # if isinstance(result, list) and len(result) > 0:
-            #     rec_texts += result[0].get("rec_texts", [])
-            # elif isinstance(result, dict):
-            #     rec_texts += result.get("rec_texts", [])
-            # else:
-            #     rec_texts += []
 
             results = ocr.readtext(str(image_path))
 
@@ -60,11 +45,11 @@ def pdf_parse():
                 rec_texts += text
 
             print("Текст успешно распознан")
+            
+        with open(input_data_dir / "email.txt", "w") as file:
+            file.write(''.join(rec_texts))
     except Exception as e:
         print(f"Текст не распознан, {e}")
-
-    with open(input_data_dir / "email.txt", "w") as file:
-        file.write(''.join(rec_texts))
 
 
 pdf_parse()
