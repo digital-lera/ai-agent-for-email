@@ -9,7 +9,7 @@ pytest
 python-socketio==5.16.2
 python_dateutil==2.9.0.post0
 Requests
-starlette==1.2.1
+starlette
 annotated_doc
 annotated-types==0.7.0
 anyio==4.13.0
