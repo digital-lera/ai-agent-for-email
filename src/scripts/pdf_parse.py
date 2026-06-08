@@ -16,7 +16,6 @@ def pdf_parse():
     except Exception as e:
         print('Ошибка: файл не найден, проверьте правильность путей')
 
-    print(f"Вложение {filename} прочитано")
 
     try:
         images = convert_from_path(input_data_dir / filename)
@@ -51,6 +50,3 @@ def pdf_parse():
             
     except Exception as e:
         print(f"Текст не распознан, {e}")
-
-
-pdf_parse()
