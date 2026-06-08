@@ -1,7 +1,6 @@
 from pathlib import Path
 from pdf2image import convert_from_path
-import cv2
-from rapidocr_onnxruntime import RapidOCR
+from paddleocr import PaddleOCR
 
 scripts_dir = Path(__file__).resolve().parent.parent / "scripts"
 input_data_dir = scripts_dir / "input_data"
@@ -29,24 +28,30 @@ def pdf_parse():
             image_path = input_data_dir / "file.png"
             image.save(image_path, 'PNG')
             
-        ocr = RapidOCR()
+        ocr = PaddleOCR(
+            lang='ru',
+            use_doc_orientation_classify=False,
+            use_doc_unwarping=False,
+            use_textline_orientation=False
+            )
 
         text = ""
         rec_texts = []
 
         for index, image in enumerate(images):
             
-            results, elapse = ocr(image_path)
+            result = ocr.predict(image_path)
 
-            if results:
-                for item in results:
-                    box, text, score = item
-                    rec_texts += text
+            if isinstance(result, list) and len(result) > 0:
+                rec_texts += result[0].get("rec_texts", [])
+            elif isinstance(result, dict):
+                rec_texts += result.get("rec_texts", [])
+            else:
+                rec_texts += []
 
-            print(f"Текст cо страницы {index + 1} успешно распознан")
+            print("Текст успешно распознан")
     except Exception as e:
         print(f"Текст не распознан, {e}")
 
     with open(input_data_dir / "email.txt", "w") as file:
         file.write('\n'.join(rec_texts))
-
