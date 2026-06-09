@@ -98,6 +98,7 @@ def check_email(socketio):
                             filename_txt.write(fileName)
                             socketio.emit('filename_recognized', f'{fileName}')
                     else:
+                        plain_text = ""
                         plain_text += part.get_content()
 
                         with open(input_data_dir / "email.txt", "w") as file:

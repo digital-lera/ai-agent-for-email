@@ -31,7 +31,7 @@ def run_chain(socketio, with_attachment = True):
             socketio.emit('chain_update', chain_status)
             
             try:
-                if script == 'pdf_parse.py':
+                if script == 'pdf_parse.py' and with_attachment:
                     socketio.emit('text_parse_started', 'true')
                     pdf_parse()
                 elif script == 'ai_output_json.py':
