@@ -69,11 +69,11 @@ def check_email(socketio):
                     if part.get_content_maintype() == 'multipart':
                         continue
                         
-                    if part.is_attachment():
-                        fileName = part.get_filename()
-                        if fileName:
-                            print(f"Найдено вложение: {fileName}")
-                            has_attachments = True
+                    
+                    fileName = part.get_filename()
+                    if fileName:
+                        print(f"Найдено вложение: {fileName}")
+                        has_attachments = True
                         parts = re.findall(r'\?B\?([A-Za-z0-9+/=]+)\?\=', fileName)
 
                         decoded_parts = []
