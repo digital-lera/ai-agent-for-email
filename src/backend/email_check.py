@@ -95,6 +95,7 @@ def check_email(socketio):
                             filename_txt.write(fileName)
                             socketio.emit('filename_recognized', f'{fileName}')
             
+
             imap.close()
             imap.logout()
             

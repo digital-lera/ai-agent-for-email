@@ -124,8 +124,8 @@ def create_simple_task(error_text, attachment_id):
             "observerIds": [3887],  # Empty array
             "documentIds": [attachment_id],  # Empty array
         },
-    )
 
+    )
 
 def get_signed_by_contact():
     # Ищем подписанта: обрезаем строку так, чтобы в ней точно не было лишних символов
