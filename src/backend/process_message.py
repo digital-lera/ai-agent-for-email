@@ -5,13 +5,14 @@ import json
 
 from src.scripts.pdf_parse import pdf_parse as pdf_parse
 from src.scripts.ai_output_json import process_text_with_ai as process_text_with_ai
+from src.scripts.ai_output_json import process_raw_email_text as process_raw_email_text
 from src.scripts.directum import directum as directum
 
 chain_status = {}  
 
 scripts_dir = Path(__file__).resolve().parent.parent / "scripts"
 
-def run_chain(socketio):
+def run_chain(socketio, with_attachment = True):
     print("Запущена обработка письма.")
     stages = [
         ('pdf_parse.py', 'Получение текста документа'),
@@ -35,7 +36,11 @@ def run_chain(socketio):
                     pdf_parse()
                 elif script == 'ai_output_json.py':
                     socketio.emit('ai_data_recognition_started')
-                    process_text_with_ai()
+
+                    if (with_attachment):
+                        process_text_with_ai()
+                    else:
+                        process_raw_email_text()
 
                     try:
                         with open(scripts_dir / "processed_data.json", "r") as file:

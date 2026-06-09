@@ -56,6 +56,8 @@ def check_email(socketio):
                 _, msg_data = imap.fetch(num, '(RFC822)')
                 msg = email.message_from_bytes(msg_data[0][1])
 
+                has_attachments = False
+
                 socketio.emit('new_email', {
                     'subject': base64.b64decode(msg['subject'][10:2]).decode('utf-8'),
                     'sender': msg['from']
@@ -71,6 +73,7 @@ def check_email(socketio):
                     fileName = part.get_filename()
 
                     if bool(fileName):
+                        has_attachments = True
                         parts = re.findall(r'\?B\?([A-Za-z0-9+/=]+)\?\=', fileName)
 
                         decoded_parts = []
@@ -94,13 +97,20 @@ def check_email(socketio):
                         with open(scripts_dir / 'filename.txt', 'w') as filename_txt:
                             filename_txt.write(fileName)
                             socketio.emit('filename_recognized', f'{fileName}')
-            
+                    else:
+                        content_type = part.get_content_type()
+
+                        if content_type == "text/plain":
+                            plain_text += part.get_content()
+
+                        with open(input_data_dir / "email.txt", "w") as file:
+                            file.write(plain_text)    
 
             imap.close()
             imap.logout()
             
             if email_found:
-                process_message.run_chain(socketio)
+                process_message.run_chain(socketio, with_attachment=has_attachments)
             
     except Exception as e:
         print("При обработке почты возникла ошибка: ", e)
