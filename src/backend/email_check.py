@@ -30,6 +30,10 @@ def check_email(socketio):
     imap_server = "ukexch.uktaif.ru"
     imap = imaplib.IMAP4_SSL(imap_server)
 
+    global subject 
+    global sender 
+
+
     try:
 
         imap.login(username, mail_pass)
@@ -65,6 +69,9 @@ def check_email(socketio):
                     'subject': base64.b64decode(msg['subject'][10:2]).decode('utf-8'),
                     'sender': msg['from']
                 })
+
+                subject = base64.b64decode(msg['subject'][10:2]).decode('utf-8')
+                sender = msg['from']
 
                 print("Найдено непрочитанное входящее письмо.")
 
@@ -117,7 +124,7 @@ def check_email(socketio):
         imap.close()
         imap.logout()
 
-        send_error_task.create_error_task()
+        send_error_task.create_error_task(subject, sender)
 
         socketio.emit('reset')
         time.sleep(time_interval_no_email)
