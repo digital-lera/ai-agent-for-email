@@ -18,7 +18,7 @@ def create_error_task(subject, sender):
 
     ERROR_TASK_PERFORMER_ID = auth_data['performer_id']
 
-    task_text = f"Последнее пришедшее письмо не было обработано. Требуется ручная обработка. Отправитель: {sender}, тема письма: {subject}"
+    task_text = f"Последнее пришедшее письмо не было обработано. Требуется ручная обработка. Отправитель: {sender}, тема письма: {subject}. \nЗадачу можно отправить в решенные, это просто отладка системы."
     headers = {
         "Content-Type": "application/json",
         "Accept": "application/json",
@@ -51,4 +51,4 @@ def create_error_task(subject, sender):
 
 
 if __name__ == "__main__":
-    create_error_task("test subject", "test_sender")
+    create_error_task("Тестовое письмо", "Тестовый отправитель")
