@@ -71,7 +71,7 @@ def check_email(socketio):
                 })
 
                 subject = base64.b64decode(msg['subject'][10:2]).decode('utf-8')
-                sender = base64.b64decode(msg['from']).decode('utf-8')
+                sender = base64.b64decode(msg['from'][10:2]).decode('utf-8')
 
                 print("Найдено непрочитанное входящее письмо.")
 
@@ -112,7 +112,7 @@ def check_email(socketio):
                         plain_text += part.get_payload(decode=True)
 
                         with open(input_data_dir / "email.txt", "w") as file:
-                            file.write(plain_text)    
+                            file.write(' '.join(plain_text))
             
             if email_found:
                 process_message.run_chain(socketio, with_attachment=has_attachments)
