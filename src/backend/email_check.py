@@ -90,6 +90,8 @@ def check_email(socketio):
                     'sender': sender
                 })
 
+                is_pdf = False
+
                 print("Найдено непрочитанное входящее письмо.")
 
                 for part in msg.walk():
@@ -99,6 +101,8 @@ def check_email(socketio):
                     
                     fileName = part.get_filename()
                     if fileName:
+                        if ("pdf" in fileName):
+                            is_pdf = True
                         print(f"Найдено вложение: {fileName}")
                         has_attachments = True
                         parts = re.findall(r'\?B\?([A-Za-z0-9+/=]+)\?\=', fileName)
@@ -124,21 +128,9 @@ def check_email(socketio):
                         with open(scripts_dir / 'filename.txt', 'w') as filename_txt:
                             filename_txt.write(fileName)
                             socketio.emit('filename_recognized', f'{fileName}')
-                    else: #обработка без вложений
-                        plain_text = ""
-                        payload = part.get_payload(decode=True)
-                        if payload:
-                            if isinstance(payload, bytes):
-                                plain_text += payload.decode('utf-8', errors='replace')
-                            else:
-                                plain_text += payload
-
-                        with open(input_data_dir / "email.txt", "w") as file:
-                            file.write(plain_text)  
             
-            if email_found:
+            if email_found and is_pdf:
                 process_message.run_chain(socketio, with_attachment=has_attachments)
-            
     except Exception as e:
         print("При обработке почты возникла ошибка: ", e)
         socketio.emit('error', str(e))
