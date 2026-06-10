@@ -31,10 +31,7 @@ def directum():
 
     scripts_dir = Path(__file__).resolve().parent.parent / "scripts"
 
-    SIGNEDBY_ID = -1
-    CONTACT_ID = -1
-    COUNTERPARTY_ID = -1
-    RESULT_DOCUMENT_ID = -1
+   
 
     ERRORS = []
     MAIN_REFINED_DATA = {"Ключевые данные":"Полученные после обработки "}
@@ -48,6 +45,11 @@ def directum():
     AUTH = (f"{auth_data['username']}", f"{auth_data['password']}")
 
     ERROR_TASK_PERFORMER_ID = auth_data['performer_id']
+
+    SIGNEDBY_ID = ERROR_TASK_PERFORMER_ID
+    CONTACT_ID = ERROR_TASK_PERFORMER_ID
+    COUNTERPARTY_ID = ERROR_TASK_PERFORMER_ID
+    RESULT_DOCUMENT_ID = ERROR_TASK_PERFORMER_ID
 
     # TODO: пока скрыты предупреждения о недействительных сертификатах
     warnings.filterwarnings("ignore", message="Unverified HTTPS request")
