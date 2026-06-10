@@ -223,7 +223,7 @@
           });
           
           socket.on('new_email', data => {
-              document.getElementById('status').innerHTML = `📧 Получено новое письмо! ${data.subject} ${data.sender}`;
+              document.getElementById('status').innerHTML = `📧 Получено новое письмо!\nТема: ${data.subject}\nОтправитель: ${data.sender}`;
               document.getElementById('filename').innerHTML = ``
               document.getElementById('status').classList.remove('error');
           });
