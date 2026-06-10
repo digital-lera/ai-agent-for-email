@@ -10,6 +10,7 @@ import base64
 import email
 
 import src.backend.process_message as process_message
+import src.scripts.send_error_task as send_error_task
 
 email_found = False
 
@@ -21,20 +22,22 @@ def check_email(socketio):
     print(f"Проверка почты...")
     email_found = False
 
+    with open(scripts_dir / 'login.json', 'r') as login_file:
+            login_data = json.load(login_file)
+
+    mail_pass = f"{login_data['email-password']}"
+    username = f"{login_data['username']}@uktaif.ru"
+    imap_server = "ukexch.uktaif.ru"
+    imap = imaplib.IMAP4_SSL(imap_server)
+
     try:
+
+        imap.login(username, mail_pass)
         if input_data_dir.exists():
             shutil.rmtree(input_data_dir)
 
         os.mkdir(input_data_dir)
         
-        with open(scripts_dir / 'login.json', 'r') as login_file:
-            login_data = json.load(login_file)
-
-        mail_pass = f"{login_data['email-password']}"
-        username = f"{login_data['username']}@uktaif.ru"
-        imap_server = "ukexch.uktaif.ru"
-        imap = imaplib.IMAP4_SSL(imap_server)
-        imap.login(username, mail_pass)
 
         imap.select('INBOX')
         result, data = imap.search(None, 'UNSEEN')
@@ -103,9 +106,6 @@ def check_email(socketio):
 
                         with open(input_data_dir / "email.txt", "w") as file:
                             file.write(plain_text)    
-
-            imap.close()
-            imap.logout()
             
             if email_found:
                 process_message.run_chain(socketio, with_attachment=has_attachments)
@@ -113,3 +113,12 @@ def check_email(socketio):
     except Exception as e:
         print("При обработке почты возникла ошибка: ", e)
         socketio.emit('error', str(e))
+        time_interval_error = 10
+        imap.close()
+        imap.logout()
+
+        send_error_task.create_error_task()
+
+        socketio.emit('reset')
+        time.sleep(time_interval_no_email)
+        check_email(socketio)
