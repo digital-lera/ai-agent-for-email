@@ -8,6 +8,7 @@ import time
 import imaplib
 import base64
 import email
+from email.header import decode_header
 
 import src.backend.process_message as process_message
 import src.scripts.send_error_task as send_error_task
@@ -65,13 +66,29 @@ def check_email(socketio):
 
                 has_attachments = False
 
-                socketio.emit('new_email', {
-                    'subject': base64.b64decode(msg['subject'][10:2]).decode('utf-8'),
-                    'sender': base64.b64decode(msg['from'][10:2]).decode('utf-8')
-                })
+                def decode_mime_header(header_value):
+                    if not header_value:
+                        return ""
+                    decoded_fragments = decode_header(header_value)
+                    result_text = ""
+                    for text_bytes, charset in decoded_fragments:
+                        if isinstance(text_bytes, bytes):
+                            charset = charset or 'utf-8'
+                            try:
+                                result_text += text_bytes.decode(charset, errors='replace')
+                            except LookupError:
+                                result_text += text_bytes.decode('utf-8', errors='replace')
+                        else:
+                            result_text += text_bytes
+                    return result_text
+                
+                subject = decode_mime_header(msg.get('subject'))
+                sender = decode_mime_header(msg.get('from'))
 
-                subject = base64.b64decode(msg['subject'][10:2]).decode('utf-8')
-                sender = base64.b64decode(msg['from'][10:2]).decode('utf-8')
+                socketio.emit('new_email', {
+                    'subject': subject,
+                    'sender': sender
+                })
 
                 print("Найдено непрочитанное входящее письмо.")
 
