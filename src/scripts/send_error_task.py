@@ -42,7 +42,7 @@ def create_error_task():
 
 
 
-    print(request.status_code)
+    print("Письмо обработать не удалось ни на одном этапе. Направлена задача с ошибкой.")
 
 if __name__ == "__main__":
     create_error_task()
