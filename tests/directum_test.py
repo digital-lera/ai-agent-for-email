@@ -23,7 +23,7 @@ def get_metadata_status_code(username, password, url_address):
     warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
     metadata_response = requests.get(
-        f"{ADDRESS}/$metadata')",
+        f"{ADDRESS}/$metadata",
         auth=AUTH,
         verify=False,
     )
