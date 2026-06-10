@@ -20,6 +20,7 @@ def directum():
     global RESULT_DOCUMENT_ID
 
     global MAIN_REFINED_DATA
+    global ERROR_TASK_PERFORMER_ID
 
     global scripts_dir
 
@@ -45,6 +46,8 @@ def directum():
     DIRECTUM_URL = f"{auth_data['odataurl']}"
 
     AUTH = (f"{auth_data['username']}", f"{auth_data['password']}")
+
+    ERROR_TASK_PERFORMER_ID = auth_data['performer_id']
 
     # TODO: пока скрыты предупреждения о недействительных сертификатах
     warnings.filterwarnings("ignore", message="Unverified HTTPS request")
@@ -120,8 +123,8 @@ def create_simple_task(error_text, attachment_id):
             "subject": "Входящее письмо обработано с ошибкой.",
             "importance": "Normal",
             "text": f"{task_text}",
-            "performerIds": [3887],  # Array of longs
-            "observerIds": [3887],  # Empty array
+            "performerIds": [ERROR_TASK_PERFORMER_ID],  # Array of longs
+            "observerIds": [ERROR_TASK_PERFORMER_ID],  # Empty array
             "documentIds": [attachment_id],  # Empty array
         },
 
