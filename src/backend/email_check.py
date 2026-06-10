@@ -67,7 +67,7 @@ def check_email(socketio):
 
                 socketio.emit('new_email', {
                     'subject': base64.b64decode(msg['subject'][10:2]).decode('utf-8'),
-                    'sender': base64.b64decode(msg['from']).decode('utf-8')
+                    'sender': base64.b64decode(msg['from'][10:2]).decode('utf-8')
                 })
 
                 subject = base64.b64decode(msg['subject'][10:2]).decode('utf-8')
