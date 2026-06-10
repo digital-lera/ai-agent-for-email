@@ -126,10 +126,15 @@ def check_email(socketio):
                             socketio.emit('filename_recognized', f'{fileName}')
                     else: #обработка без вложений
                         plain_text = ""
-                        plain_text += part.get_payload(decode=True)
+                        payload = part.get_payload(decode=True)
+                        if payload:
+                            if isinstance(payload, bytes):
+                                plain_text += payload.decode('utf-8', errors='replace')
+                            else:
+                                plain_text += payload
 
                         with open(input_data_dir / "email.txt", "w") as file:
-                            file.write(' '.join(plain_text))
+                            file.write(plain_text)  
             
             if email_found:
                 process_message.run_chain(socketio, with_attachment=has_attachments)
