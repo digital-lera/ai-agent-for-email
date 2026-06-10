@@ -101,8 +101,6 @@ def check_email(socketio):
                     
                     fileName = part.get_filename()
                     if fileName:
-                        if (fileName.endswith("pdf")):
-                            is_pdf = True
                         print(f"Найдено вложение: {fileName}")
                         has_attachments = True
                         parts = re.findall(r'\?B\?([A-Za-z0-9+/=]+)\?\=', fileName)
@@ -117,6 +115,10 @@ def check_email(socketio):
                         
                         if fileName == "":
                             fileName = "file.pdf"
+
+                        
+                        if (fileName.endswith("pdf")):
+                            is_pdf = True
 
                         filePath = os.path.join(input_data_dir, fileName)
                         if not os.path.isfile(filePath):
