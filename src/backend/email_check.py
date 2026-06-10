@@ -26,7 +26,7 @@ def check_email(socketio):
             login_data = json.load(login_file)
 
     mail_pass = f"{login_data['email-password']}"
-    username = f"{login_data['username']}@uktaif.ru"
+    username = f"{login_data['username']}"
     imap_server = "ukexch.uktaif.ru"
     imap = imaplib.IMAP4_SSL(imap_server)
 
