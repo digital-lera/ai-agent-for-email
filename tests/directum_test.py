@@ -31,4 +31,4 @@ def get_metadata_status_code(username, password, url_address):
     return metadata_response.status_code
 
 def test_Directum_login(username, password, url):
-    assert get_metadata_status_code(username, password, url) not in [401, 404]
+    assert get_metadata_status_code(username, password, url) < 400
