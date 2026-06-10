@@ -102,7 +102,7 @@ def check_email(socketio):
                             socketio.emit('filename_recognized', f'{fileName}')
                     else: #обработка без вложений
                         plain_text = ""
-                        plain_text += part.get_payload(decode=True).decode(part.get_content_charset() or "utf-8")
+                        plain_text += part.get_payload(decode=True)
 
                         with open(input_data_dir / "email.txt", "w") as file:
                             file.write(plain_text)    
