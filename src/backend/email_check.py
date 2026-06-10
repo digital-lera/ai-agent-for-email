@@ -101,7 +101,7 @@ def check_email(socketio):
                     
                     fileName = part.get_filename()
                     if fileName:
-                        if ("pdf" in fileName):
+                        if (fileName.endswith("pdf")):
                             is_pdf = True
                         print(f"Найдено вложение: {fileName}")
                         has_attachments = True
