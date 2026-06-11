@@ -140,13 +140,6 @@ def check_email(socketio):
     try:
         imap.login(username, mail_pass)
 
-        try:
-            folder_name_utf7 = processed_folder.encode('utf-7').decode('ascii')
-            imap.create(folder_name_utf7)
-            imap.create(processed_folder)
-            print(f"Есть доступ к папке '{processed_folder}'")
-        except Exception as e:
-            print(f"⚠️ Не удалось создать папку '{processed_folder}': {e}")
         
         # Очистка директории
         if input_data_dir.exists():
@@ -252,6 +245,15 @@ def check_email(socketio):
             
             # === ДЕЙСТВИЕ: Если есть PDF(ы) - отправляем на обработку ===
             if pdf_files_list:
+
+                try:
+                    folder_name_utf7 = processed_folder.encode('utf-7').decode('ascii')
+                    imap.create(folder_name_utf7)
+                    imap.create(processed_folder)
+                    print(f"Есть доступ к папке '{processed_folder}'")
+                except Exception as e:
+                    print(f"⚠️ Не удалось создать папку '{processed_folder}': {e}")
+
                 print(f"✅ PDF(ы) найдены ({len(pdf_files_list)}): {pdf_files_list}")
                 print("Отправляем на обработку по цепи...")
                 process_message.run_chain(socketio, with_attachment=has_attachments)
