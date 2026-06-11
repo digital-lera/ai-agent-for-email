@@ -17,6 +17,8 @@ scripts_dir = Path(__file__).resolve().parent.parent / "scripts"
 input_data_dir = scripts_dir / "input_data"
 
 
+processed_folder = "Обработано ИИ"
+
 def decode_mime_header(header_value):
     """Декодирует MIME-заголовки с попыткой нескольких кодировок"""
     if not header_value:
@@ -137,6 +139,12 @@ def check_email(socketio):
     
     try:
         imap.login(username, mail_pass)
+
+        try:
+            imap.create(processed_folder)
+            print(f"Папка '{processed_folder}' создана или уже существует")
+        except Exception as e:
+            print(f"⚠️ Не удалось создать папку '{processed_folder}': {e}")
         
         # Очистка директории
         if input_data_dir.exists():
@@ -239,31 +247,23 @@ def check_email(socketio):
                     email_txt.write(combined_text)
                 print(f"✅ Сохранён текст из {len(all_attachments_text)} вложений в email.txt")
             
-            # === Читаем текст сообщения если нет PDF вложений ===
-            if not pdf_files_list:
-                print("❌ PDF не найден, читаем текст сообщения...")
-                email_text = read_email_text(msg)
-                
-                if email_text:
-                    print(f"Текст сообщения ({len(email_text)} символов):\n{email_text[:500]}")
-                    
-                    # Сохраняем текст письма в email.txt
-                    with open(input_data_dir / "email.txt", "w", encoding='utf-8') as email_txt:
-                        email_txt.write(email_text)
-                else:
-                    print("⚠️ Текст сообщения пуст или не может быть извлечён")
             
             # === ДЕЙСТВИЕ: Если есть PDF(ы) - отправляем на обработку ===
             if pdf_files_list:
                 print(f"✅ PDF(ы) найдены ({len(pdf_files_list)}): {pdf_files_list}")
                 print("Отправляем на обработку по цепи...")
                 process_message.run_chain(socketio, with_attachment=has_attachments)
-            else:
+                
+                # === Перемещаем письмо в папку "Обработано ИИ" после успешной обработки ===
+                print(f"Перемещаю письмо {num} в папку '{processed_folder}'...")
                 try:
-                    imap.store(num, '-FLAGS', '\\Seen')
-                    print(f"✅ Письмо {num} помечено как непрочитанное")
+                    imap.copy(num, processed_folder)       # Копируем в "Обработано ИИ"
+                    imap.store(num, '+FLAGS', '\\Deleted') # Удаляем из INBOX
+                    imap.expunge()                          # Экспонируем изменения
+                    
+                    print(f"✅ Письмо {num} успешно перемещено в '{processed_folder}'")
                 except Exception as e:
-                    print(f"⚠️ Не удалось пометить письмо как непрочитанное: {e}")
+                    print(f"⚠️ Не удалось переместить письмо {num}: {e}")
         
         imap.close()
         imap.logout()
