@@ -17,7 +17,7 @@ scripts_dir = Path(__file__).resolve().parent.parent / "scripts"
 input_data_dir = scripts_dir / "input_data"
 
 
-processed_folder = "AI processed"
+processed_folder = '"AI processed"'
 
 def decode_mime_header(header_value):
     """Декодирует MIME-заголовки с попыткой нескольких кодировок"""
