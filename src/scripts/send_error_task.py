@@ -29,7 +29,7 @@ def create_error_task(subject, sender):
     deadline_iso = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     request = requests.post(
-        f"{DIRECTUM_URL}Docflow/CreateSimpleTask",
+        f"{DIRECTUM_URL}/Docflow/CreateSimpleTask",
         verify=False,
         auth=AUTH,
         headers=headers,
@@ -51,4 +51,4 @@ def create_error_task(subject, sender):
 
 
 if __name__ == "__main__":
-    create_error_task("Тестовое письмо", "Тестовый отправитель")
+    create_error_task("", "")

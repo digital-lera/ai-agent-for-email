@@ -140,7 +140,7 @@ def get_signed_by_contact():
         auth=AUTH,
         verify=False,
     )
-
+    print(doc_response_signedby.status_code, doc_response_signedby.content.decode('utf-8'))
     
     matched_id = -1
     
@@ -173,6 +173,7 @@ def get_recipient():
             auth=AUTH,
             verify=False,
         )
+        print(doc_response_contact.status_code, doc_response_contact.content.decode('utf-8'))
         matched_id = find_fuzzy_name(doc_response_contact, string_to_find, is_name=True)
 
     if matched_id < 1:
@@ -288,3 +289,6 @@ def add_files_to_incoming_letter():
         print(
             f"Документ не был загружен. Ошибка: {response.status_code} - {response.content.decode('utf-8')}"
         )
+
+if __name__ == "__main__":
+    directum()
