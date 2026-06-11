@@ -73,11 +73,18 @@ def check_email(socketio):
                     result_text = ""
                     for text_bytes, charset in decoded_fragments:
                         if isinstance(text_bytes, bytes):
-                            charset = charset or 'utf-8'
-                            try:
-                                result_text += text_bytes.decode(charset, errors='replace')
-                            except LookupError:
-                                result_text += text_bytes.decode('utf-8', errors='replace')
+                            # Список кодировок для пробования
+                            encodings = [charset, 'utf-8', 'windows-1251', 'gbk', 'iso-8859-1'] if charset else ['utf-8', 'windows-1251', 'gbk']
+                            
+                            for encoding in encodings:
+                                try:
+                                    result_text += text_bytes.decode(encoding)
+                                    break
+                                except (UnicodeDecodeError, LookupError):
+                                    continue
+                            else:
+                                # Фолбэк на latin-1
+                                result_text += text_bytes.decode('latin-1', errors='replace')
                         else:
                             result_text += text_bytes
                     return result_text
@@ -105,10 +112,20 @@ def check_email(socketio):
                         parts = re.findall(r'\?B\?([A-Za-z0-9+/=]+)\?\=', fileName)
 
                         decoded_parts = []
+                        decoded_parts = []
                         for part_to_decode in parts:
                             bytes_data = base64.b64decode(part_to_decode)
-                            text = bytes_data.decode('utf-8')
-                            decoded_parts.append(text)
+                            # Попытка нескольких кодировок
+                            for encoding in ['utf-8', 'windows-1251', 'gbk', 'iso-8859-1', 'latin-1']:
+                                try:
+                                    text = bytes_data.decode(encoding)
+                                    decoded_parts.append(text)
+                                    break
+                                except (UnicodeDecodeError, LookupError):
+                                    continue
+                            else:
+                                # Если ничего не подошло — используем latin-1 (он всегда работает)
+                                decoded_parts.append(bytes_data.decode('latin-1'))
 
                         fileName = ' '.join(decoded_parts)
                         
