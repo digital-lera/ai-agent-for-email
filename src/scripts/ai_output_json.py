@@ -37,7 +37,9 @@ def process_raw_email_text(email_content):
             model=MODEL_NAME,
             prompt=message,
             options={
-                "temperature": 0.2,  # Делаем ответы более точными
+                "temperature": 0.3,  
+                "thinking": False,
+                "num_ctx": 40960
             }
         )
     
@@ -56,7 +58,9 @@ def process_raw_email_text(email_content):
             model=MODEL_NAME,
             prompt=message_for_json,
             options={
-                "temperature": 0.2,  # Делаем ответы более точными
+                "temperature": 0.3,  
+                "thinking": False,
+                "num_ctx": 40960
             }
         )
     print("Обработка ИИ завершена.")
