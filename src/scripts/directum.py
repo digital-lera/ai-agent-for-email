@@ -235,7 +235,8 @@ def create_incoming_letter():
 
     if doc_response.status_code > 300:
         print(f"Документ не создан, ошибка {doc_response.status_code}")
-        return -1
+
+        raise ValueError(f"Произошла ошибка {doc_response.status_code}. Документ не будет создан")
     else:
         return doc_response.json()["Id"]
 
