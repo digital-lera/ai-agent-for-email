@@ -134,18 +134,20 @@ def create_simple_task(error_text, attachment_id):
 
 def get_signed_by_contact():
     # Ищем подписанта: обрезаем строку так, чтобы в ней точно не было лишних символов
+    
     string_to_find = re.sub(r"[^а-яёА-ЯЁ ]", "", MAIN_REFINED_DATA["signedBy"])
-    doc_response_signedby = requests.get(
-        f"{DIRECTUM_URL}/IContacts?$filter=contains(Name,'{string_to_find[0]}')",
-        auth=AUTH,
-        verify=False,
-    )
-    
+
     matched_id = -1
-    
     if len(string_to_find) < 1:
         print("Имя адресата не найдено в письме")
     else:
+        doc_response_signedby = requests.get(
+            f"{DIRECTUM_URL}/IContacts?$filter=contains(Name,'{string_to_find[0]}')",
+            auth=AUTH,
+            verify=False,
+        )
+        
+        
         matched_id = find_fuzzy_name(doc_response_signedby, string_to_find, is_name=True)
 
     if matched_id < 1:
