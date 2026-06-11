@@ -47,7 +47,7 @@ def decode_mime_header(header_value):
 
 
 def decode_filename_base64(fileName):
-    """Декодирует имя файла с Base64 и plusieurs кодировками"""
+    """Декодирует имя файла с Base64 и несколькими кодировками"""
     parts = re.findall(r'\?B\?([A-Za-z0-9+/=]+)\?\=', fileName)
     
     if not parts:
@@ -174,9 +174,10 @@ def check_email(socketio):
             
             # === ЖЕЛЕЗНАЯ ЛОГИКА ===
             has_attachments = False
-            pdf_file_path = None
+            pdf_files_list = []  # Список всех PDF файлов
+            all_attachments_text = []  # Все тексты вложений
             
-            # 2. Поиск PDF вложений
+            # 2. Поиск и обработка всех вложений
             for part in msg.walk():
                 if part.get_content_maintype() == 'multipart':
                     continue
@@ -192,45 +193,77 @@ def check_email(socketio):
                     
                     print(f"Найдено вложение: {decoded_filename}")
                     
-                    # Проверка на PDF
+                    # Сохраняем вложение
+                    filePath = os.path.join(input_data_dir, decoded_filename)
+                    
+                    if not os.path.isfile(filePath):
+                        fp = open(filePath, 'wb')
+                        fp.write(part.get_payload(decode=True))
+                        fp.close()
+                        print(f"Вложение сохранён: {filePath}")
+                    
+                    # Если это PDF — добавляем в список
                     if decoded_filename.lower().endswith('.pdf'):
-                        filePath = os.path.join(input_data_dir, decoded_filename)
-                        
-                        if not os.path.isfile(filePath):
-                            fp = open(filePath, 'wb')
-                            fp.write(part.get_payload(decode=True))
-                            fp.close()
-                            print(f"PDF сохранён: {filePath}")
-                        
-                        pdf_file_path = filePath
-                        
-                        with open(scripts_dir / 'filename.txt', 'w', encoding='utf-8') as filename_txt:
-                            filename_txt.write(decoded_filename)
-                        
-                        socketio.emit('filename_recognized', decoded_filename)
+                        pdf_files_list.append(decoded_filename)
+                    
+                    # Попытка прочитать текст из вложения (для txt, html и др.)
+                    try:
+                        attachment_payload = part.get_payload(decode=True)
+                        if attachment_payload:
+                            # Попытка нескольких кодировок
+                            for encoding in ['utf-8', 'windows-1251', 'latin-1']:
+                                try:
+                                    attachment_text = attachment_payload.decode(encoding)
+                                    all_attachments_text.append(attachment_text)
+                                    break
+                                except (UnicodeDecodeError, LookupError):
+                                    continue
+                            else:
+                                all_attachments_text.append(attachment_payload.decode('latin-1', errors='replace'))
+                    except Exception as e:
+                        print(f"Не удалось прочитать текст из вложения {decoded_filename}: {e}")
+                    
+                    socketio.emit('filename_recognized', decoded_filename)
             
-            # === ДЕЙСТВИЕ: 1. Если есть PDF - отправляем на обработку ===
-            if pdf_file_path:
-                print("✅ PDF найден! Отправляем на обработку по цепи...")
+            # === Сохраняем ВСЕ PDF имена в filename.txt (каждое с новой строки) ===
+            if pdf_files_list:
+                with open(scripts_dir / 'filename.txt', 'w', encoding='utf-8') as filename_txt:
+                    for pdf_filename in pdf_files_list:
+                        filename_txt.write(pdf_filename + '\n')
+                print(f"✅ Сохранено {len(pdf_files_list)} PDF файлов в filename.txt")
+            
+            # === Сохраняем ВСЕ тексты вложений в email.txt ===
+            if all_attachments_text:
+                combined_text = '\n\n'.join(all_attachments_text)
+                with open(input_data_dir / "email.txt", "w", encoding='utf-8') as email_txt:
+                    email_txt.write(combined_text)
+                print(f"✅ Сохранён текст из {len(all_attachments_text)} вложений в email.txt")
+            
+            # === Читаем текст сообщения если нет PDF вложений ===
+            if not pdf_files_list:
+                print("❌ PDF не найден, читаем текст сообщения...")
+                email_text = read_email_text(msg)
+                
+                if email_text:
+                    print(f"Текст сообщения ({len(email_text)} символов):\n{email_text[:500]}")
+                    
+                    # Сохраняем текст письма в email.txt
+                    with open(input_data_dir / "email.txt", "w", encoding='utf-8') as email_txt:
+                        email_txt.write(email_text)
+                else:
+                    print("⚠️ Текст сообщения пуст или не может быть извлечён")
+            
+            # === ДЕЙСТВИЕ: Если есть PDF(ы) - отправляем на обработку ===
+            if pdf_files_list:
+                print(f"✅ PDF(ы) найдены ({len(pdf_files_list)}): {pdf_files_list}")
+                print("Отправляем на обработку по цепи...")
                 process_message.run_chain(socketio, with_attachment=has_attachments)
-                continue
-            
-            # === ДЕЙСТВИЕ: 2. Если нет PDF - читаем текст сообщения ===
-            print("❌ PDF не найден, читаем текст сообщения...")
-            email_text = read_email_text(msg)
-            
-            if email_text:
-                print(f"Текст сообщения ({len(email_text)} символов):\n{email_text[:500]}")
-                # Здесь можно добавить обработку текста:
-                # process_text_message(socketio, email_text)
             else:
-                print("⚠️ Текст сообщения пуст или не может быть извлечён")
-            
-            # === ДЕЙСТВИЕ: 3. Если ничего не получается - error task ===
-            # В текущей логике error task вызывается только при EXCEPTION
-            # Если нужно вызывать при пустом тексте - добавьте:
-            # if not email_text:
-            #     send_error_task.create_error_task(subject, sender, reason="Текст сообщения пуст")
+                try:
+                    imap.store(num, '-FLAGS', '\\Seen')
+                    print(f"✅ Письмо {num} помечено как непрочитанное")
+                except Exception as e:
+                    print(f"⚠️ Не удалось пометить письмо как непрочитанное: {e}")
         
         imap.close()
         imap.logout()
@@ -246,7 +279,7 @@ def check_email(socketio):
         imap.close()
         imap.logout()
         
-        send_error_task.create_error_task(subject, sender)
+        send_error_task.create_error_task(subject, sender, reason=error_reason or str(e))
         
         socketio.emit('reset')
         time.sleep(10)

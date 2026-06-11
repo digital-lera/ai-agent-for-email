@@ -227,6 +227,7 @@ def create_incoming_letter():
             "Addressee@odata.bind": (
                 f"{DIRECTUM_URL}/IEmployee({CONTACT_ID})" if CONTACT_ID != -1 else ""
             ),
+            "Note": "ДОКУМЕНТ ОБРАБОТАН ИИ-АГЕНТОМ, данные необходимо перепроверить"
         },
         auth=AUTH,
         verify=False,
