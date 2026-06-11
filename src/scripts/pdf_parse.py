@@ -65,6 +65,9 @@ def pdf_parse():
             pdf_text = []
             
             for index, image in enumerate(images):
+                if len(images) > 5 and index > 4 and index != len(images) - 1:
+                    continue
+
                 image_path = input_data_dir / f"{pdf_filename}_page_{index}.png"
                 
                 results = ocr.readtext(str(image_path))
