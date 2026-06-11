@@ -270,6 +270,8 @@ def check_email(socketio):
                     print(f"✅ Письмо {num} успешно перемещено в '{processed_folder}'")
                 except Exception as e:
                     print(f"⚠️ Не удалось переместить письмо {num}: {e}")
+            else:
+                imap.store(num, '+FLAGS', '\\Flagged')
         
         imap.close()
         imap.logout()
