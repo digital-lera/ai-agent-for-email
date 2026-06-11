@@ -247,8 +247,6 @@ def check_email(socketio):
             if pdf_files_list:
 
                 try:
-                    folder_name_utf7 = processed_folder.encode('utf-7').decode('ascii')
-                    imap.create(folder_name_utf7)
                     imap.create(processed_folder)
                     print(f"Есть доступ к папке '{processed_folder}'")
                 except Exception as e:
@@ -261,8 +259,6 @@ def check_email(socketio):
                 # === Перемещаем письмо в папку "Обработано ИИ" после успешной обработки ===
                 print(f"Перемещаю письмо {num} в папку '{processed_folder}'...")
                 try:
-                    folder_name_utf7 = processed_folder.encode('utf-7').decode('ascii')
-                    imap.copy(num, folder_name_utf7)
                     imap.copy(num, processed_folder)       # Копируем в "Обработано ИИ"
                     imap.store(num, '+FLAGS', '\\Deleted') # Удаляем из INBOX
                     imap.expunge()                          # Экспонируем изменения

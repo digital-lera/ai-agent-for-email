@@ -272,6 +272,9 @@ def add_files_to_incoming_letter():
         new_version_data = version_response.json()
         version_id = new_version_data["Id"]
     else:
+        ERRORS.append(
+            f"Версия документа не создана."
+        )
         sys.exit(f"Версия документа не создана, ошибка {version_response.status_code}")
 
     session = requests.Session()
@@ -288,6 +291,9 @@ def add_files_to_incoming_letter():
     if response.status_code in [200, 204]:
         print("PDF документ успешно загружен")
     else:
+        ERRORS.append(
+            f"PDF документ не был корректно добавлен в версию документа. Требуется загрузить новую версию вручную"
+        )
         print(
             f"Документ не был загружен. Ошибка: {response.status_code} - {response.content.decode('utf-8')}"
         )
