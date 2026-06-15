@@ -73,23 +73,32 @@ def load_config(path: Path = LOGIN_PATH) -> dict[str, Any]:
 
 def check_email(socketio) -> int:
     """Poll the inbox once and return the number of messages inspected."""
+    print("\nПроверка почты...", flush=True)
     config = load_config()
+    print(f"Конфигурация загружена из {LOGIN_PATH}", flush=True)
     imap = None
     try:
         imap = _connect(config)
+        print("Поиск непрочитанных сообщений...", flush=True)
         status, data = imap.search(None, "UNSEEN")
         _require_ok(status, "search inbox")
         message_ids = data[0].split() if data and data[0] else []
+        print(f"Найдено непрочитанных сообщений: {len(message_ids)}", flush=True)
 
         for message_number in message_ids:
             try:
                 _process_one_message(imap, message_number, socketio, config)
             except Exception as exc:
+                print(
+                    f"Ошибка обработки IMAP-сообщения {message_number!r}: {exc}",
+                    flush=True,
+                )
                 socketio.emit("error", {"message": str(exc)})
                 _mark_for_manual_processing(imap, message_number)
         return len(message_ids)
     finally:
         if imap is not None:
+            print("Закрытие IMAP-соединения.", flush=True)
             _safe_logout(imap)
 
 
@@ -101,11 +110,14 @@ def _connect(config: dict[str, Any]):
         raise ProcessingError(f"Missing email configuration field: {exc}") from exc
 
     server = str(config.get("imap_server", DEFAULT_IMAP_SERVER))
+    print(f"Подключение к IMAP-серверу {server}...", flush=True)
     imap = imaplib.IMAP4_SSL(server)
     status, response = imap.login(username, password)
     _require_ok(status, "login", response)
+    print(f"IMAP-авторизация выполнена для {username}.", flush=True)
     status, response = imap.select("INBOX")
     _require_ok(status, "select inbox", response)
+    print("Папка INBOX выбрана.", flush=True)
     return imap
 
 
@@ -115,6 +127,7 @@ def _process_one_message(
     socketio,
     config: dict[str, Any],
 ) -> None:
+    print(f"\nПолучение сообщения IMAP #{message_number.decode()}...", flush=True)
     status, msg_data = imap.fetch(message_number, "(BODY.PEEK[])")
     _require_ok(status, "fetch message", msg_data)
     if not msg_data or not isinstance(msg_data[0], tuple):
@@ -123,6 +136,8 @@ def _process_one_message(
     message = email.message_from_bytes(msg_data[0][1])
     subject = decode_mime_header(message.get("subject"))
     sender = decode_mime_header(message.get("from"))
+    print(f"Найдено письмо: {subject}", flush=True)
+    print(f"Отправитель: {sender}", flush=True)
     context = MessageContext(
         subject=subject,
         sender=sender,
@@ -131,6 +146,11 @@ def _process_one_message(
         raw_text=read_email_text(message),
     )
     context.prepare()
+    print(f"Рабочая директория создана: {context.work_dir}", flush=True)
+    print(
+        f"Текст тела письма: {len(context.raw_text)} символов.",
+        flush=True,
+    )
 
     socketio.emit("reset")
     socketio.emit("new_email", {"subject": subject, "sender": sender})
@@ -141,18 +161,25 @@ def _process_one_message(
         result = run_chain(socketio, context, config)
         if not result.success:
             raise ProcessingError(result.error or "Processing pipeline failed")
+        print("Все этапы успешны. Перемещение письма в обработанные.", flush=True)
         _move_to_processed(imap, message_number, config)
     except Exception as exc:
+        print(f"Письмо обработать не удалось: {exc}", flush=True)
         socketio.emit("error", {"message": str(exc)})
         _mark_for_manual_processing(imap, message_number)
+        print("Письмо помечено флагом для ручной обработки.", flush=True)
         try:
+            print("Создание задачи об ошибке в Directum RX...", flush=True)
             create_error_task(subject, sender, str(exc), config)
+            print("Задача об ошибке создана.", flush=True)
         except Exception as task_exc:
+            print(f"Не удалось создать задачу об ошибке: {task_exc}", flush=True)
             socketio.emit(
                 "error",
                 {"message": f"{exc}; error task also failed: {task_exc}"},
             )
     finally:
+        print(f"Очистка рабочей директории: {context.work_dir}", flush=True)
         context.cleanup()
 
 
@@ -183,20 +210,36 @@ def _save_attachments(
         safe_name = _unique_name(decode_filename(original_name), used_names)
         path = context.work_dir / safe_name
         path.write_bytes(payload)
+        print(
+            f"Вложение сохранено: {safe_name} ({len(payload)} байт)",
+            flush=True,
+        )
         context.attachments.append(path)
         if path.suffix.lower() == ".pdf":
             context.pdf_attachments.append(path)
+            print(f"Вложение добавлено в очередь OCR: {safe_name}", flush=True)
         elif part.get_content_maintype() == "text":
             attachment_text = _decode_part(part).strip()
             if attachment_text:
                 context.raw_text = "\n\n".join(
                     filter(None, (context.raw_text, attachment_text))
                 )
+                print(
+                    f"Текстовое вложение добавлено к письму: {safe_name}",
+                    flush=True,
+                )
         socketio.emit("filename_recognized", safe_name)
+
+    print(
+        f"Всего вложений: {len(context.attachments)}, "
+        f"PDF: {len(context.pdf_attachments)}",
+        flush=True,
+    )
 
 
 def _move_to_processed(imap, message_number: bytes, config: dict[str, Any]) -> None:
     folder = str(config.get("processed_folder", DEFAULT_PROCESSED_FOLDER))
+    print(f"Проверка папки IMAP '{folder}'...", flush=True)
     create_status, _ = imap.create(folder)
     if create_status not in {"OK", "NO"}:
         raise ProcessingError(f"Could not create or access IMAP folder {folder}")
@@ -207,6 +250,10 @@ def _move_to_processed(imap, message_number: bytes, config: dict[str, Any]) -> N
     _require_ok(status, "mark source message deleted", response)
     status, response = imap.expunge()
     _require_ok(status, "expunge source message", response)
+    print(
+        f"Письмо {message_number.decode()} перемещено в '{folder}'.",
+        flush=True,
+    )
 
 
 def _mark_for_manual_processing(imap, message_number: bytes) -> None:

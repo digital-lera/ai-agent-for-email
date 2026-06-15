@@ -21,6 +21,10 @@ def create_error_task(
     reason: str,
     config: dict[str, Any],
 ) -> None:
+    print(
+        f"Подготовка задачи об ошибке: subject={subject!r}, sender={sender!r}",
+        flush=True,
+    )
     try:
         base_url = str(config["odataurl"]).rstrip("/")
         auth = (str(config["username"]), str(config["password"]))
@@ -39,6 +43,7 @@ def create_error_task(
         f"Причина: {reason}"
     )
     try:
+        print("Отправка задачи об ошибке в Directum...", flush=True)
         response = requests.post(
             f"{base_url}/Docflow/CreateSimpleTask",
             verify=verify_tls,
@@ -63,5 +68,9 @@ def create_error_task(
             },
         )
         response.raise_for_status()
+        print(
+            f"Задача об ошибке создана, HTTP {response.status_code}.",
+            flush=True,
+        )
     except requests.RequestException as exc:
         raise ProcessingError(f"Failed to create Directum error task: {exc}") from exc

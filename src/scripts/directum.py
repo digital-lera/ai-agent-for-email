@@ -85,6 +85,7 @@ class DirectumClient:
             raise ProcessingError(f"Invalid Directum configuration: {exc}") from exc
 
     def _request(self, method: str, path: str, **kwargs) -> requests.Response:
+        print(f"Directum запрос: {method} {path}", flush=True)
         try:
             response = self.session.request(
                 method,
@@ -93,6 +94,10 @@ class DirectumClient:
                 **kwargs,
             )
             response.raise_for_status()
+            print(
+                f"Directum ответ: {response.status_code} для {method} {path}",
+                flush=True,
+            )
             return response
         except requests.RequestException as exc:
             raise ProcessingError(
@@ -101,8 +106,10 @@ class DirectumClient:
 
     def _lookup(self, entity: str, name: str, *, is_person: bool = False) -> int:
         if not name:
+            print(f"Поиск {entity} пропущен: значение пустое.", flush=True)
             return -1
 
+        print(f"Поиск в Directum {entity}: {name!r}", flush=True)
         first_character = name[0].replace("'", "''")
         response = self._request(
             "GET",
@@ -113,13 +120,23 @@ class DirectumClient:
             },
         )
         payload = response.json()
-        return find_fuzzy_id(payload.get("value", []), name, is_person=is_person)
+        matched_id = find_fuzzy_id(
+            payload.get("value", []),
+            name,
+            is_person=is_person,
+        )
+        print(
+            f"Результат поиска {entity} для {name!r}: id={matched_id}",
+            flush=True,
+        )
+        return matched_id
 
     def create_incoming_letter(
         self,
         data: ExtractedData,
         attachments: list[Path],
     ) -> int:
+        print("Поиск связанных сущностей Directum...", flush=True)
         signed_by_id = self._lookup("IContacts", data.signed_by, is_person=True)
         recipient_id = self._lookup("IEmployees", data.recipient, is_person=True)
         counterparty_id = self._lookup("ICounterparties", data.correspondent)
@@ -169,14 +186,23 @@ class DirectumClient:
                 "Directum did not return an incoming letter ID"
             ) from exc
 
+        print(f"Входящее письмо создано, id={document_id}", flush=True)
+        print(f"Файлов для загрузки в Directum: {len(attachments)}", flush=True)
         for attachment in attachments:
             self._upload_attachment(document_id, attachment)
 
         if self.errors:
+            print(
+                f"Обнаружены неточные данные: {len(self.errors)}. "
+                "Создается задача на проверку.",
+                flush=True,
+            )
             self._create_review_task(document_id)
+        print(f"Работа с Directum завершена, document_id={document_id}", flush=True)
         return document_id
 
     def _upload_attachment(self, document_id: int, attachment: Path) -> None:
+        print(f"Подготовка файла к загрузке: {attachment.name}", flush=True)
         try:
             content = attachment.read_bytes()
         except OSError as exc:
@@ -185,6 +211,10 @@ class DirectumClient:
             ) from exc
         if not content:
             raise ProcessingError(f"Attachment {attachment.name} is empty")
+        print(
+            f"Размер загружаемого файла {attachment.name}: {len(content)} байт",
+            flush=True,
+        )
 
         version_response = self._request(
             "POST",
@@ -214,8 +244,10 @@ class DirectumClient:
             },
             data=content,
         )
+        print(f"Файл {attachment.name} загружен в Directum.", flush=True)
 
     def _create_review_task(self, document_id: int) -> None:
+        print(f"Создание задачи проверки для документа {document_id}.", flush=True)
         error_text = "\n".join(self.errors)
         self._request(
             "POST",
@@ -241,6 +273,7 @@ class DirectumClient:
                 "documentIds": [document_id],
             },
         )
+        print("Задача проверки создана.", flush=True)
 
 
 def _as_bool(value: Any) -> bool:

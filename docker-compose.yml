@@ -9,10 +9,21 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - OLLAMA_HOST=http://taif-mail-ollama:11434
+      - OCR_GPU=true
+      - OCR_CUDA_DEVICE=0
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     restart: unless-stopped
     volumes:
       - .:/app
     command: "python app.py"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
   ollama:
     image: ollama/ollama:latest
@@ -25,7 +36,6 @@ services:
 
     environment:
       - OLLAMA_KEEP_ALIVE=-1
-    # Добавьте этот блок для проброса GPU:
     deploy:
       resources:
         reservations:

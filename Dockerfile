@@ -2,6 +2,8 @@ FROM python:3.11
 
 ENV FLAGS_allocator_strategy=naive_best_fit
 ENV SET_FLAGS_USING_AVX=0
+ENV OCR_GPU=true
+ENV OCR_CUDA_DEVICE=0
 
 WORKDIR /app
 

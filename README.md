@@ -19,12 +19,28 @@ contain:
   "processed_folder": "AI",
   "verify_tls": true,
   "request_timeout": 30,
-  "max_attachment_bytes": 52428800
+  "max_attachment_bytes": 52428800,
+  "ocr_gpu": true,
+  "ocr_workers": 0,
+  "ocr_confidence": 0.5,
+  "ocr_dpi": 200,
+  "ocr_heartbeat_seconds": 15
 }
 ```
 
 `verify_tls` defaults to `true`. Disable it only for a controlled development
 environment with a known self-signed certificate.
+
+`ocr_gpu` defaults to `true`. The application container is configured with an
+NVIDIA GPU reservation and EasyOCR refuses to silently fall back to CPU. At
+startup it prints the PyTorch version, bundled CUDA runtime, CUDA availability,
+GPU name, VRAM, compute capability, and cuDNN version. `OCR_CUDA_DEVICE`
+selects the GPU index and defaults to `0`.
+
+The host CUDA/driver version and the CUDA runtime bundled with PyTorch do not
+need to have the same minor version. The NVIDIA driver must support the runtime
+reported by `torch.version.cuda`. During every page, OCR prints a heartbeat
+every `ocr_heartbeat_seconds`.
 
 Each email is processed in an isolated directory under `src/scripts/jobs`.
 The message is moved to the processed IMAP folder only after OCR, AI
