@@ -3,6 +3,41 @@
 
 **🎉 [v0.1.0 pre-release](https://github.com/digital-lera/ai-agent-for-email/releases/tag/0.1.0) is out!**
 
+## Runtime configuration
+
+Create `src/scripts/login.json` locally. The file is ignored by Git and must
+contain:
+
+```json
+{
+  "username": "service-account",
+  "email-password": "mail-password",
+  "password": "directum-password",
+  "odataurl": "https://directum.example/odata",
+  "performer_id": 123,
+  "imap_server": "ukexch.uktaif.ru",
+  "processed_folder": "AI",
+  "verify_tls": true,
+  "request_timeout": 30,
+  "max_attachment_bytes": 52428800
+}
+```
+
+`verify_tls` defaults to `true`. Disable it only for a controlled development
+environment with a known self-signed certificate.
+
+Each email is processed in an isolated directory under `src/scripts/jobs`.
+The message is moved to the processed IMAP folder only after OCR, AI
+validation, Directum document creation, and all attachment uploads succeed.
+Failed messages are flagged for manual processing and produce a Directum task.
+
+## Local verification
+
+```bash
+python3 -m unittest discover -s tests -p "test_*.py" -v
+python3 -m pytest
+```
+
 ## Key features to add for the next release:
 
  ### 🧮 Interface

@@ -1,54 +1,67 @@
-import requests
-from pathlib import Path
-import json
-import warnings
 from datetime import datetime, timedelta
+from typing import Any
 
-def create_error_task(subject, sender):
+import requests
 
-    scripts_dir = Path(__file__).resolve().parent.parent / "scripts"
-    warnings.filterwarnings("ignore", message="Unverified HTTPS request")
+from src.backend.models import ProcessingError
 
-    with open(scripts_dir / "login.json", "r") as file:
-        auth_data = json.load(file)
 
-    DIRECTUM_URL = f"{auth_data['odataurl']}"
+DEFAULT_TIMEOUT = 30
 
-    AUTH = (f"{auth_data['username']}", f"{auth_data['password']}")
 
-    ERROR_TASK_PERFORMER_ID = auth_data['performer_id']
+def _as_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() not in {"0", "false", "no", "off"}
 
-    task_text = f"Последнее пришедшее письмо не было обработано. Требуется ручная обработка. Отправитель: {sender}, тема письма: {subject}. \nЗадачу можно отправить в решенные, это просто отладка системы."
-    headers = {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "Return": "representation",
-        
-    }
 
-    deadline_iso = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+def create_error_task(
+    subject: str,
+    sender: str,
+    reason: str,
+    config: dict[str, Any],
+) -> None:
+    try:
+        base_url = str(config["odataurl"]).rstrip("/")
+        auth = (str(config["username"]), str(config["password"]))
+        performer_id = int(config["performer_id"])
+        verify_tls = _as_bool(config.get("verify_tls", True))
+        timeout = int(config.get("request_timeout", DEFAULT_TIMEOUT))
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ProcessingError(
+            f"Cannot create an error task with invalid configuration: {exc}"
+        ) from exc
 
-    request = requests.post(
-        f"{DIRECTUM_URL}/Docflow/CreateSimpleTask",
-        verify=False,
-        auth=AUTH,
-        headers=headers,
-        json={
-            "assignmentType": "Assignment",
-            "deadline": deadline_iso,
-            "subject": "Входящее письмо не было обработано агентом.",
-            "importance": "Normal",
-            "text": f"{task_text}",
-            "performerIds": [ERROR_TASK_PERFORMER_ID],  
-            "observerIds": [ERROR_TASK_PERFORMER_ID],  
-            "documentIds": []
-        },
+    task_text = (
+        "Письмо не было обработано и требует ручной обработки.\n"
+        f"Отправитель: {sender or 'неизвестен'}\n"
+        f"Тема: {subject or 'не указана'}\n"
+        f"Причина: {reason}"
     )
-
-    print(request.status_code)
-    print(request.content.decode('utf-8'))
-    print("Письмо обработать не удалось ни на одном этапе. Направлена задача с ошибкой.")
-
-
-if __name__ == "__main__":
-    create_error_task("", "")
+    try:
+        response = requests.post(
+            f"{base_url}/Docflow/CreateSimpleTask",
+            verify=verify_tls,
+            timeout=timeout,
+            auth=auth,
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "Return": "representation",
+            },
+            json={
+                "assignmentType": "Assignment",
+                "deadline": (
+                    datetime.now().astimezone() + timedelta(days=1)
+                ).isoformat(),
+                "subject": "Входящее письмо не было обработано агентом.",
+                "importance": "Normal",
+                "text": task_text,
+                "performerIds": [performer_id],
+                "observerIds": [performer_id],
+                "documentIds": [],
+            },
+        )
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        raise ProcessingError(f"Failed to create Directum error task: {exc}") from exc

@@ -288,4 +288,6 @@ body {
   font-size: 16;
 }
 
-/*# sourceMappingURL=style.css.map */
+#status {
+  white-space: pre-line;
+}

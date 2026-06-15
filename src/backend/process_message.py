@@ -1,87 +1,80 @@
-from pathlib import Path
-import subprocess
-import time
-import json
+from src.backend.models import MessageContext, PipelineResult, ProcessingError
 
-from src.scripts.pdf_parse import pdf_parse as pdf_parse
-from src.scripts.ai_output_json import process_text_with_ai as process_text_with_ai
-from src.scripts.ai_output_json import process_raw_email_text as process_raw_email_text
-from src.scripts.directum import directum as directum
 
-chain_status = {}  
+def run_chain(socketio, context: MessageContext, config: dict) -> PipelineResult:
+    stages = (
+        ("Получение текста документа", "text_parse", _extract_text),
+        ("Выделение необходимых данных", "ai_data_recognition", _extract_data),
+        ("Создание входящего письма в Directum RX", "directum_api", _create_document),
+    )
+    state = {"context": context, "config": config}
 
-scripts_dir = Path(__file__).resolve().parent.parent / "scripts"
+    for name, event_prefix, stage in stages:
+        status = {"stage": name, "status": "В процессе", "log": ""}
+        socketio.emit("chain_update", status)
+        socketio.emit(f"{event_prefix}_started", True)
 
-def run_chain(socketio, with_attachment = True):
-    print("Запущена обработка письма.")
-    stages = [
-        ('pdf_parse.py', 'Получение текста документа'),
-        ('ai_output_json.py', 'Выделение необходимых данных'),
-        ('directum.py', 'Создание входящего письма в Directum RX')
-    ]
+        try:
+            stage(state)
+        except Exception as exc:
+            message = f"{name}: {exc}"
+            socketio.emit(
+                "chain_update",
+                {"stage": name, "status": "Ошибка", "log": message},
+            )
+            socketio.emit("error", {"message": message})
+            return PipelineResult(success=False, error=message)
 
-    def execute_stage():
-        global chain_status
-        for script, name in stages:
+        socketio.emit(
+            "chain_update",
+            {"stage": name, "status": "Завершено", "log": f"Процесс завершен - {name}"},
+        )
+        socketio.emit(f"{event_prefix}_finished", True)
+        if event_prefix == "ai_data_recognition":
+            socketio.emit(
+                "json_data_received",
+                state["extracted_data"].to_dict(),
+            )
 
-            print(f"Текущая операция: {name}")
+    document_id = state["document_id"]
+    socketio.emit("chain_complete", {"document_id": document_id})
+    return PipelineResult(success=True, document_id=document_id)
 
-            chain_status['stage'] = name
-            chain_status['status'] = 'В процессе'
-            socketio.emit('chain_update', chain_status)
-            
-            try:
-                if script == 'pdf_parse.py' and with_attachment:
-                    socketio.emit('text_parse_started', 'true')
-                    pdf_parse()
-                elif script == 'ai_output_json.py':
-                    socketio.emit('ai_data_recognition_started')
 
-                    if (with_attachment):
-                        process_text_with_ai()
-                    else:
-                        process_raw_email_text()
+def _extract_text(state):
+    context = state["context"]
+    text_parts = [context.raw_text] if context.raw_text.strip() else []
+    if context.pdf_attachments:
+        from src.scripts.pdf_parse import pdf_parse
 
-                    try:
-                        with open(scripts_dir / "processed_data.json", "r") as file:
-                            json_data = json.load(file)
+        pdf_output = context.work_dir / "ocr.txt"
+        pdf_parse(context.pdf_attachments, pdf_output)
+        text_parts.append(pdf_output.read_text(encoding="utf-8"))
+    if not text_parts:
+        raise ProcessingError("The email contains no readable body or PDF text")
+    context.extracted_text_path.write_text(
+        "\n\n".join(text_parts),
+        encoding="utf-8",
+    )
 
-                        socketio.emit("json_data_recieved", json_data)
-                    except:
-                        print("Данные не были выделены")
 
-                elif script == 'directum.py':
-                    socketio.emit('directum_api_started', 'true')
-                    directum()
+def _extract_data(state):
+    from src.scripts.ai_output_json import process_text_with_ai
 
-                chain_status['status'] = 'Завершено'
-            except Exception as e:
-                chain_status['status'] = 'Error'
+    context = state["context"]
+    content = context.extracted_text_path.read_text(encoding="utf-8")
+    state["extracted_data"] = process_text_with_ai(
+        content,
+        context.processed_data_path,
+        [path.name for path in context.attachments],
+    )
 
-            # cmd = ['python', script]
-            # result = subprocess.run(cmd, capture_output=True, text=True, cwd=scripts_dir)
 
-            if chain_status['status'] == 'Error':
-                socketio.emit('error')
-                break
+def _create_document(state):
+    from src.scripts.directum import DirectumClient
 
-            print(f"Процесс завершен - {name}")
-            chain_status['log'] = f"Процесс завершен - {name}"
-            socketio.emit('chain_update', chain_status)
-
-            if script == 'pdf_parse.py':
-                socketio.emit('text_parse_finished', 'true')
-            elif script == 'ai_output_json.py':
-                socketio.emit('ai_data_recognition_finished')
-            elif script == 'directum.py':
-                socketio.emit('directum_api_finished', 'true')
-
-        chain_status['complete'] = True
-        socketio.emit('chain_complete')
-        
-        # Wait 10s after chain finishes, then emit reset
-        time.sleep(10)
-        socketio.emit('reset')
-        email_found = False
-
-    execute_stage()
+    client = DirectumClient.from_config(state["config"])
+    state["document_id"] = client.create_incoming_letter(
+        state["extracted_data"],
+        state["context"].pdf_attachments,
+    )

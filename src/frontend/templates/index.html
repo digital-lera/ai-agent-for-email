@@ -1,4 +1,4 @@
-<html lang="en">
+<html lang="ru">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -138,16 +138,16 @@
                           <p class="connection-status__list__element__server-name">
                               Почтовый сервер Outlook:
                           </p>
-                          <p class="connection-status__list__element__status ok">
-                              ОК
+                          <p class="connection-status__list__element__status">
+                              Нет данных
                           </p>
                       </li>
                       <li class="connection-status__list__element">
                           <p class="connection-status__list__element__server-name">
                               Сервер DirectumRX:
                           </p>
-                          <p class="connection-status__list__element__status ok">
-                              OK
+                          <p class="connection-status__list__element__status">
+                              Нет данных
                           </p>
                       </li>
                   </ul>
@@ -164,25 +164,25 @@
                         <p class="statistics__list__element__field-name">
                             Писем пришло за день:
                         </p>
-                        <p class="statistics__list__element__number">0</p>
+                        <p class="statistics__list__element__number">-</p>
                     </li>
                     <li class="statistics__list__element">
                         <p class="statistics__list__element__field-name">
                             Успешно обработано ИИ-агентом:
                         </p>
-                        <p class="statistics__list__element__number">0</p>
+                        <p class="statistics__list__element__number">-</p>
                     </li>
                     <li class="statistics__list__element">
                         <p class="statistics__list__element__field-name">
                             Частично обработано ИИ-агентом:
                         </p>
-                        <p class="statistics__list__element__number">0</p>
+                        <p class="statistics__list__element__number">-</p>
                     </li>
                     <li class="statistics__list__element">
                         <p class="statistics__list__element__field-name">
                             Передано на ручную обработку:
                         </p>
-                        <p class="statistics__list__element__number">0</p>
+                        <p class="statistics__list__element__number">-</p>
                     </li>
                 </ul>
             </div>
@@ -223,8 +223,9 @@
           });
           
           socket.on('new_email', data => {
-              document.getElementById('status').innerHTML = `📧 Получено новое письмо!<br>Тема: ${data.subject}<br>Отправитель: ${data.sender}`;
-              document.getElementById('filename').innerHTML = ``
+              document.getElementById('status').textContent =
+                `Получено новое письмо!\nТема: ${data.subject}\nОтправитель: ${data.sender}`;
+              document.getElementById('filename').textContent = "";
               document.getElementById('status').classList.remove('error');
           });
 
@@ -257,22 +258,27 @@
           socket.on('directum_api_finished', data => {
               document.getElementById('directumAPIStatus').classList.remove('in-process');
               document.getElementById('directumAPIStatus').classList.add('completed');   
-              document.getElementById('status').innerHTML = `<p>Обработка завершена</p>`;
+              document.getElementById('status').textContent = "Обработка завершена";
         
           });
 
           socket.on('filename_recognized', data => {
-              document.getElementById('filename').innerHTML = `<p>Вложенный файл: ${data}</p>`
+              document.getElementById('filename').textContent = `Вложенный файл: ${data}`;
           });
 
           socket.on('chain_update', data => {
-              document.getElementById('chainStages').innerHTML = `
-                  <p><strong>${data.stage}</strong>: ${data.status}</p>
-                  <pre>${data.log || ''}</pre>
-              `;
+              const container = document.getElementById('chainStages');
+              const summary = document.createElement('p');
+              const stage = document.createElement('strong');
+              const log = document.createElement('pre');
+
+              stage.textContent = data.stage || "";
+              summary.append(stage, document.createTextNode(`: ${data.status || ""}`));
+              log.textContent = data.log || "";
+              container.replaceChildren(summary, log);
           });
 
-          socket.on('json_data_recieved', function(data) {
+          socket.on('json_data_received', function(data) {
             console.log("Получен JSON:", data);
             
             // Обновляем HTML
@@ -291,7 +297,8 @@
               document.getElementById('textParseStatus').classList.remove('in-process','completed');
 
 
-              document.getElementById('status').innerHTML = `Ошибка! Дополнительную информацию можно найти в консоли или логах`;
+              document.getElementById('status').textContent =
+                "Ошибка! Дополнительную информацию можно найти в консоли или логах";
               document.getElementById('status').classList.add('error');
           });
 
@@ -305,8 +312,8 @@
               document.getElementById('textParseStatus').classList.remove('in-process','completed');
               document.getElementById('textParseStatus').classList.add('out-of-service');
               
-              document.getElementById('status').innerHTML=`Новых писем нет.`;
-              document.getElementById('filename').innerHTML=``;
+              document.getElementById('status').textContent = "Новых писем нет.";
+              document.getElementById('filename').textContent = "";
 
               document.querySelector('#short-content .obtained-data__list__element__content').innerText = "";
                 document.querySelector('#contragent .obtained-data__list__element__content').innerText = "";

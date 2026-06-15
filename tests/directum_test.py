@@ -25,10 +25,13 @@ def get_metadata_status_code(username, password, url_address):
     metadata_response = requests.get(
         f"{ADDRESS}/$metadata",
         auth=AUTH,
-        verify=False,
+        verify=True,
+        timeout=30,
     )
 
     return metadata_response.status_code
 
 def test_Directum_login(username, password, url):
-    assert get_metadata_status_code(username, password, url) not in [401, 404]
+    if "def" in {username, password, url}:
+        pytest.skip("Directum integration credentials were not provided")
+    assert get_metadata_status_code(username, password, url) == 200

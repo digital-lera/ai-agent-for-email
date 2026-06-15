@@ -14,8 +14,11 @@ def password(pytestconfig):
 
 @pytest.fixture(scope="module")
 def email_login(username, password):
+    if username == "def" or password == "def":
+        pytest.skip("Email integration credentials were not provided")
 
-    username += "@uktaif.ru"
+    if "@" not in username:
+        username += "@uktaif.ru"
     imap = imaplib.IMAP4_SSL(imap_server)
     status, messages = imap.login(username, password)
         

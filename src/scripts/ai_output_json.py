@@ -1,158 +1,80 @@
 from pathlib import Path
-import ollama
+import json
 import os
-from ollama import chat
-from ollama import ChatResponse
-from ollama import Client, ResponseError
+from ollama import Client
 
-scripts_dir = Path(__file__).resolve().parent.parent / "scripts"
+from src.backend.models import ExtractedData, ProcessingError
 
-def process_raw_email_text(email_content):
 
+scripts_dir = Path(__file__).resolve().parent
+MODEL_NAME = os.getenv("OLLAMA_MODEL", "qwen3:8b")
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+
+
+def _read_prompt(name):
+    path = scripts_dir / "prompts" / name
     try:
-        with open(scripts_dir / "prompts/prompt_for_raw_text.txt", 'r', encoding='utf-8') as prompt:
-            prompt_text = prompt.read()
-    except FileNotFoundError:
-        print("Ошибка: не предоставлен текст промпта.")
-    except Exception as e:
-        print(f"An error occured: {e}")
+        return path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise ProcessingError(f"Failed to read AI prompt {name}: {exc}") from exc
 
-    message = f"{prompt_text}\n{email_content}"
 
-    MODEL_NAME = "qwen3:8b"
-
-    OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
-
+def _get_client():
     client = Client(host=OLLAMA_HOST)
-
     local_models = client.list()
-    models_list = [m['model'] for m in local_models.get('models', [])]
-    
+    models = getattr(local_models, "models", None)
+    if models is None:
+        models = local_models.get("models", [])
+    models_list = [
+        getattr(model, "model", None) or model.get("model", "")
+        for model in models
+    ]
     if not any(MODEL_NAME in m for m in models_list):
-        print(f"Модель {MODEL_NAME} еще не найдена локально. Пробуем запустить скачивание через API...")
+        print(f"Модель {MODEL_NAME} не найдена локально. Запускается загрузка.")
         client.pull(MODEL_NAME)
-        print("Модель успешно скачана!")
+    return client
 
-    response = client.generate(
+
+def process_text_with_ai(email_content, output_path, attachment_names=()):
+    if not email_content.strip():
+        raise ProcessingError("No email text was provided to the AI stage")
+
+    preprocessing_prompt = _read_prompt("prompt_for_preprocessing.txt")
+    json_prompt = _read_prompt("prompt_for_json.txt")
+    filenames = "\n".join(attachment_names)
+    client = _get_client()
+
+    try:
+        response = client.generate(
             model=MODEL_NAME,
-            prompt=message,
-            options={
-                "temperature": 0.3,  
-                "thinking": False,
-                "num_ctx": 40960
-            }
+            prompt=f"{preprocessing_prompt}\n\n{filenames}\n{email_content}",
+            options={"temperature": 0.2, "thinking": False, "num_ctx": 40960},
         )
-    
-    try:
-        with open(scripts_dir / "prompts/prompt_for_json.txt", 'r', encoding='utf-8') as prompt:
-            prompt_text = prompt.read()
-            print("Прочтен промпт для json")
-    except FileNotFoundError:
-        print("Ошибка: промпт для json не предоставлен")
-    except Exception as e:
-        print(f"An error occured: {e}")
-
-    message_for_json = f"{prompt_text}\n{response['response']}"
-
-    response_with_json = client.generate(
+        json_response = client.generate(
             model=MODEL_NAME,
-            prompt=message_for_json,
-            options={
-                "temperature": 0.3,  
-                "thinking": False,
-                "num_ctx": 40960
-            }
+            prompt=f"{json_prompt}\n{_response_text(response)}",
+            format="json",
+            options={"temperature": 0.2, "thinking": False, "num_ctx": 40960},
         )
-    print("Обработка ИИ завершена.")
+    except Exception as exc:
+        raise ProcessingError(f"AI processing failed: {exc}") from exc
 
-    with open(scripts_dir / "processed_data.json","w") as data:
-        data.write(response_with_json['response'])
-
-
-def process_text_with_ai():
-    
-    prompt_text=" Произошла ошибка при загрузке промпта."
-    email_content="Оповести пользователя, что текст письма не предоставлен"
-
-    try:
-        with open(scripts_dir / "prompts/prompt_for_preprocessing.txt", 'r', encoding='utf-8') as prompt:
-            prompt_text = prompt.read()
-    except FileNotFoundError:
-        print("Ошибка: не предоставлен текст промпта.")
-    except Exception as e:
-        print(f"An error occured: {e}")
-
-    try:
-        with open(scripts_dir / "input_data/email.txt", 'r', encoding='utf-8') as email:
-            email_content = email.read()
-    except FileNotFoundError:
-        print("Ошибка: текст письма не предоставлен.")
-    except Exception as e:
-        print(f"An error occured: {e}")
-
-    filename_message = ""
-
-    try:
-        with open(scripts_dir / "filename.txt", 'r') as filename:
-            filename_message = filename.read()
-    except FileNotFoundError:
-        print("Ошибка: не найдено имя файла")
-    except Exception as e:
-        print(f"An error occured: {e}")
-
-    message = f"{prompt_text}\n\n{filename_message}\n{email_content}"
-
-    print("Сейчас начнется обработка")
-    MODEL_NAME = "qwen3:8b"
-    # Если скрипт работает на том же сервере, где Docker:
-    OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
-
-    client = Client(host=OLLAMA_HOST)
-
-    local_models = client.list()
-    models_list = [m['model'] for m in local_models.get('models', [])]
-    
-    # Ollama может хранить имена с тегом :latest по умолчанию, делаем гибкую проверку
-    if not any(MODEL_NAME in m for m in models_list):
-        print(f"Модель {MODEL_NAME} еще не найдена локально. Пробуем запустить скачивание через API...")
-        client.pull(MODEL_NAME)
-        print("Модель успешно скачана!")
-
-    response = client.generate(
-            model=MODEL_NAME,
-            prompt=message,
-            options={
-                "temperature": 0.2,  # Делаем ответы более точными
-            }
-        )
-                                
-    print("Первичная обработка ИИ завершена.")
-    print(response['response'])
-
-    try:
-        with open(scripts_dir / "prompts/prompt_for_json.txt", 'r', encoding='utf-8') as prompt:
-            prompt_text = prompt.read()
-            print("Прочтен промпт для json")
-    except FileNotFoundError:
-        print("Ошибка: промпт для json не предоставлен")
-    except Exception as e:
-        print(f"An error occured: {e}")
-
-    message_for_json = f"{prompt_text}\n{response['response']}"
-
-    response_with_json = client.generate(
-            model=MODEL_NAME,
-            prompt=message_for_json,
-            options={
-                "temperature": 0.2,  # Делаем ответы более точными
-            }
-        )
-    print("Обработка ИИ завершена.")
+    extracted = ExtractedData.from_json(_response_text(json_response))
+    output_path.write_text(
+        json.dumps(extracted.to_dict(), ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    return extracted
 
 
+def process_raw_email_text(email_content, output_path):
+    return process_text_with_ai(email_content, output_path)
 
-    with open(scripts_dir / "processed_data.json","w") as data:
-        data.write(response_with_json['response'])
 
-if __name__ == "__main__":
-    process_text_with_ai()
+def _response_text(response):
+    text = getattr(response, "response", None)
+    if text is None:
+        text = response["response"]
+    if not isinstance(text, str):
+        raise ProcessingError("Ollama returned an invalid response")
+    return text

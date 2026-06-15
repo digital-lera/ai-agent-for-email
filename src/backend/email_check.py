@@ -1,290 +1,262 @@
-import imaplib
-import base64
+from __future__ import annotations
+
 import email
-from email.header import decode_header
-import re
-import shutil
-import os
+import imaplib
 import json
-import time
+import re
+from email.header import decode_header, make_header
+from email.message import Message
 from pathlib import Path
+from typing import Any
 
-import src.backend.process_message as process_message
-import src.scripts.send_error_task as send_error_task
-
-
-scripts_dir = Path(__file__).resolve().parent.parent / "scripts"
-input_data_dir = scripts_dir / "input_data"
+from src.backend.models import MessageContext, ProcessingError
+from src.scripts.send_error_task import create_error_task
 
 
-processed_folder = '"AI"'
+SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
+JOBS_DIR = SCRIPTS_DIR / "jobs"
+LOGIN_PATH = SCRIPTS_DIR / "login.json"
+DEFAULT_IMAP_SERVER = "ukexch.uktaif.ru"
+DEFAULT_PROCESSED_FOLDER = "AI"
+MAX_ATTACHMENT_BYTES = 50 * 1024 * 1024
 
-def decode_mime_header(header_value):
-    """Декодирует MIME-заголовки с попыткой нескольких кодировок"""
+
+def decode_mime_header(header_value: str | None) -> str:
     if not header_value:
         return ""
-    
-    decoded_fragments = decode_header(header_value)
-    result_text = ""
-    
-    for text_bytes, charset in decoded_fragments:
-        if isinstance(text_bytes, bytes):
-            if charset:
-                encodings = [charset, 'utf-8', 'windows-1251', 'gbk', 'iso-8859-1', 'latin-1']
-            else:
-                encodings = ['utf-8', 'windows-1251', 'gbk', 'latin-1']
-            
-            for encoding in encodings:
-                try:
-                    result_text += text_bytes.decode(encoding)
-                    break
-                except (UnicodeDecodeError, LookupError):
-                    continue
-            else:
-                result_text += text_bytes.decode('latin-1', errors='replace')
-        else:
-            result_text += text_bytes
-    
-    return result_text
+    try:
+        return str(make_header(decode_header(header_value))).strip()
+    except (LookupError, UnicodeDecodeError):
+        return header_value
 
 
-def decode_filename_base64(fileName):
-    """Декодирует имя файла с Base64 и несколькими кодировками"""
-    parts = re.findall(r'\?B\?([A-Za-z0-9+/=]+)\?\=', fileName)
-    
-    if not parts:
-        return fileName
-    
-    decoded_parts = []
-    
-    for part_to_decode in parts:
-        bytes_data = base64.b64decode(part_to_decode)
-        
-        for encoding in ['utf-8', 'windows-1251', 'gbk', 'latin-1']:
-            try:
-                decoded_parts.append(bytes_data.decode(encoding))
-                break
-            except (UnicodeDecodeError, LookupError):
-                continue
-        else:
-            decoded_parts.append(bytes_data.decode('latin-1'))
-    
-    return ' '.join(decoded_parts)
+def decode_filename(file_name: str | None) -> str:
+    decoded = decode_mime_header(file_name) or "attachment"
+    decoded = decoded.replace("\x00", "").replace("\\", "/")
+    safe_name = Path(decoded).name.strip().strip(".")
+    safe_name = re.sub(r"[\r\n\t]", "_", safe_name)
+    return safe_name or "attachment"
 
 
-def read_email_text(msg):
-    """Читает текст email-сообщения"""
-    text_body = ""
-    
-    for part in msg.walk():
+def read_email_text(message: Message) -> str:
+    plain_parts = []
+    html_parts = []
+    for part in message.walk():
+        if part.get_content_disposition() == "attachment":
+            continue
         content_type = part.get_content_type()
-        
-        if content_type in ('text/plain', 'text/html'):
-            payload = part.get_payload(decode=True)
-            if payload:
-                charset = part.get_content_charset()
-                if charset:
-                    encodings = [charset, 'utf-8', 'windows-1251', 'latin-1']
-                else:
-                    encodings = ['utf-8', 'windows-1251', 'latin-1']
-                
-                for encoding in encodings:
-                    try:
-                        text_body = payload.decode(encoding)
-                        break
-                    except (UnicodeDecodeError, LookupError):
-                        continue
-                else:
-                    text_body = payload.decode('latin-1', errors='replace')
-    
-    return text_body
-
-
-def check_email(socketio):
-    subject = ""
-    sender = ""
-    error_reason = ""
-    
-    print("Проверка почты...")
-    
-    # 1. Чтение login.json
-    try:
-        login_file_path = scripts_dir / 'login.json'
-        
-        for encoding in ['utf-8', 'windows-1251', 'latin-1']:
-            try:
-                with open(login_file_path, 'r', encoding=encoding) as login_file:
-                    login_data = json.load(login_file)
-                break
-            except (UnicodeDecodeError, json.JSONDecodeError):
-                continue
+        if content_type not in {"text/plain", "text/html"}:
+            continue
+        text = _decode_part(part)
+        if content_type == "text/plain":
+            plain_parts.append(text)
         else:
-            error_reason = "Не удалось прочитать login.json"
-            raise Exception(error_reason)
-            
-    except Exception as e:
-        print(f"Ошибка при чтении login.json: {e}")
-        socketio.emit('error', str(e))
-        send_error_task.create_error_task(subject, sender, reason=error_reason or str(e))
-        socketio.emit('reset')
-        time.sleep(10)
-        check_email(socketio)
-        return
-    
-    mail_pass = login_data['email-password']
-    username = login_data['username']
-    imap_server = "ukexch.uktaif.ru"
-    
-    imap = imaplib.IMAP4_SSL(imap_server)
-    
+            html_parts.append(text)
+    return "\n\n".join(plain_parts or html_parts).strip()
+
+
+def load_config(path: Path = LOGIN_PATH) -> dict[str, Any]:
+    last_error = None
+    for encoding in ("utf-8", "windows-1251", "latin-1"):
+        try:
+            with path.open("r", encoding=encoding) as login_file:
+                config = json.load(login_file)
+            if not isinstance(config, dict):
+                raise ProcessingError("login.json must contain a JSON object")
+            return config
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            last_error = exc
+        except OSError as exc:
+            raise ProcessingError(f"Failed to read {path}: {exc}") from exc
+    raise ProcessingError(f"Failed to decode {path}: {last_error}")
+
+
+def check_email(socketio) -> int:
+    """Poll the inbox once and return the number of messages inspected."""
+    config = load_config()
+    imap = None
     try:
-        imap.login(username, mail_pass)
+        imap = _connect(config)
+        status, data = imap.search(None, "UNSEEN")
+        _require_ok(status, "search inbox")
+        message_ids = data[0].split() if data and data[0] else []
 
-        
-        # Очистка директории
-        if input_data_dir.exists():
-            shutil.rmtree(input_data_dir)
-        os.mkdir(input_data_dir)
-        
-        imap.select('INBOX')
-        result, data = imap.search(None, 'UNSEEN')
-        
-        unread_count = len(data[0].split())
-        
-        if unread_count == 0:
-            print("Непрочитанные сообщения не найдены. Повторная проверка через 30 секунд")
-            imap.close()
-            imap.logout()
-            time.sleep(30)
-            check_email(socketio)
-            return
-        
-        # Обработка всех непрочитанных писем
-        for num in data[0].split():
-            _, msg_data = imap.fetch(num, '(RFC822)')
-            msg = email.message_from_bytes(msg_data[0][1])
-            
-            # Декодирование заголовков
-            subject = decode_mime_header(msg.get('subject'))
-            sender = decode_mime_header(msg.get('from'))
-            
-            print(f"Найдено письмо: {subject}")
-            
-            socketio.emit('new_email', {
-                'subject': subject,
-                'sender': sender
-            })
-            
-            # === ЖЕЛЕЗНАЯ ЛОГИКА ===
-            has_attachments = False
-            pdf_files_list = []  # Список всех PDF файлов
-            all_attachments_text = []  # Все тексты вложений
-            
-            # 2. Поиск и обработка всех вложений
-            for part in msg.walk():
-                if part.get_content_maintype() == 'multipart':
-                    continue
-                
-                fileName = part.get_filename()
-                
-                if fileName:
-                    has_attachments = True
-                    decoded_filename = decode_filename_base64(fileName)
-                    
-                    if decoded_filename == "":
-                        decoded_filename = "file.pdf"
-                    
-                    print(f"Найдено вложение: {decoded_filename}")
-                    
-                    # Сохраняем вложение
-                    filePath = os.path.join(input_data_dir, decoded_filename)
-                    
-                    if not os.path.isfile(filePath):
-                        fp = open(filePath, 'wb')
-                        fp.write(part.get_payload(decode=True))
-                        fp.close()
-                        print(f"Вложение сохранён: {filePath}")
-                    
-                    # Если это PDF — добавляем в список
-                    if decoded_filename.lower().endswith('.pdf'):
-                        pdf_files_list.append(decoded_filename)
-                    
-                    # Попытка прочитать текст из вложения (для txt, html и др.)
-                    try:
-                        attachment_payload = part.get_payload(decode=True)
-                        if attachment_payload:
-                            # Попытка нескольких кодировок
-                            for encoding in ['utf-8', 'windows-1251', 'latin-1']:
-                                try:
-                                    attachment_text = attachment_payload.decode(encoding)
-                                    all_attachments_text.append(attachment_text)
-                                    break
-                                except (UnicodeDecodeError, LookupError):
-                                    continue
-                            else:
-                                all_attachments_text.append(attachment_payload.decode('latin-1', errors='replace'))
-                    except Exception as e:
-                        print(f"Не удалось прочитать текст из вложения {decoded_filename}: {e}")
-                    
-                    socketio.emit('filename_recognized', decoded_filename)
-            
-            # === Сохраняем ВСЕ PDF имена в filename.txt (каждое с новой строки) ===
-            if pdf_files_list:
-                with open(scripts_dir / 'filename.txt', 'w', encoding='utf-8') as filename_txt:
-                    for pdf_filename in pdf_files_list:
-                        filename_txt.write(pdf_filename + '\n')
-                print(f"✅ Сохранено {len(pdf_files_list)} PDF файлов в filename.txt")
-            
-            # === Сохраняем ВСЕ тексты вложений в email.txt ===
-            if all_attachments_text:
-                combined_text = '\n\n'.join(all_attachments_text)
-                with open(input_data_dir / "email.txt", "w", encoding='utf-8') as email_txt:
-                    email_txt.write(combined_text)
-                print(f"✅ Сохранён текст из {len(all_attachments_text)} вложений в email.txt")
-            
-            
-            # === ДЕЙСТВИЕ: Если есть PDF(ы) - отправляем на обработку ===
-            if pdf_files_list:
+        for message_number in message_ids:
+            try:
+                _process_one_message(imap, message_number, socketio, config)
+            except Exception as exc:
+                socketio.emit("error", {"message": str(exc)})
+                _mark_for_manual_processing(imap, message_number)
+        return len(message_ids)
+    finally:
+        if imap is not None:
+            _safe_logout(imap)
 
-                try:
-                    imap.create(processed_folder)
-                    print(f"Есть доступ к папке '{processed_folder}'")
-                except Exception as e:
-                    print(f"⚠️ Не удалось создать папку '{processed_folder}': {e}")
 
-                print(f"✅ PDF(ы) найдены ({len(pdf_files_list)}): {pdf_files_list}")
-                print("Отправляем на обработку по цепи...")
-                process_message.run_chain(socketio, with_attachment=has_attachments)
-                
-                # === Перемещаем письмо в папку "Обработано ИИ" после успешной обработки ===
-                print(f"Перемещаю письмо {num} в папку '{processed_folder}'...")
-                try:
-                    imap.copy(num, processed_folder)       # Копируем в "Обработано ИИ"
-                    imap.store(num, '+FLAGS', '\\Deleted') # Удаляем из INBOX
-                    imap.expunge()                          # Экспонируем изменения
-                    
-                    print(f"✅ Письмо {num} успешно перемещено в '{processed_folder}'")
-                except Exception as e:
-                    print(f"⚠️ Не удалось переместить письмо {num}: {e}")
-            else:
-                imap.store(num, '+FLAGS', '\\Flagged')
-        
+def _connect(config: dict[str, Any]):
+    try:
+        username = str(config["username"])
+        password = str(config["email-password"])
+    except KeyError as exc:
+        raise ProcessingError(f"Missing email configuration field: {exc}") from exc
+
+    server = str(config.get("imap_server", DEFAULT_IMAP_SERVER))
+    imap = imaplib.IMAP4_SSL(server)
+    status, response = imap.login(username, password)
+    _require_ok(status, "login", response)
+    status, response = imap.select("INBOX")
+    _require_ok(status, "select inbox", response)
+    return imap
+
+
+def _process_one_message(
+    imap,
+    message_number: bytes,
+    socketio,
+    config: dict[str, Any],
+) -> None:
+    status, msg_data = imap.fetch(message_number, "(BODY.PEEK[])")
+    _require_ok(status, "fetch message", msg_data)
+    if not msg_data or not isinstance(msg_data[0], tuple):
+        raise ProcessingError("IMAP returned an empty message")
+
+    message = email.message_from_bytes(msg_data[0][1])
+    subject = decode_mime_header(message.get("subject"))
+    sender = decode_mime_header(message.get("from"))
+    context = MessageContext(
+        subject=subject,
+        sender=sender,
+        message_id=message.get("message-id", message_number.decode()),
+        root_dir=JOBS_DIR,
+        raw_text=read_email_text(message),
+    )
+    context.prepare()
+
+    socketio.emit("reset")
+    socketio.emit("new_email", {"subject": subject, "sender": sender})
+    try:
+        _save_attachments(message, context, socketio, config)
+        from src.backend.process_message import run_chain
+
+        result = run_chain(socketio, context, config)
+        if not result.success:
+            raise ProcessingError(result.error or "Processing pipeline failed")
+        _move_to_processed(imap, message_number, config)
+    except Exception as exc:
+        socketio.emit("error", {"message": str(exc)})
+        _mark_for_manual_processing(imap, message_number)
+        try:
+            create_error_task(subject, sender, str(exc), config)
+        except Exception as task_exc:
+            socketio.emit(
+                "error",
+                {"message": f"{exc}; error task also failed: {task_exc}"},
+            )
+    finally:
+        context.cleanup()
+
+
+def _save_attachments(
+    message: Message,
+    context: MessageContext,
+    socketio,
+    config: dict[str, Any],
+) -> None:
+    max_bytes = int(config.get("max_attachment_bytes", MAX_ATTACHMENT_BYTES))
+    used_names: set[str] = set()
+
+    for part in message.walk():
+        original_name = part.get_filename()
+        if not original_name:
+            continue
+        payload = part.get_payload(decode=True) or b""
+        if not payload:
+            raise ProcessingError(
+                f"Attachment {decode_filename(original_name)} is empty"
+            )
+        if len(payload) > max_bytes:
+            raise ProcessingError(
+                f"Attachment {decode_filename(original_name)} exceeds "
+                f"the {max_bytes}-byte limit"
+            )
+
+        safe_name = _unique_name(decode_filename(original_name), used_names)
+        path = context.work_dir / safe_name
+        path.write_bytes(payload)
+        context.attachments.append(path)
+        if path.suffix.lower() == ".pdf":
+            context.pdf_attachments.append(path)
+        elif part.get_content_maintype() == "text":
+            attachment_text = _decode_part(part).strip()
+            if attachment_text:
+                context.raw_text = "\n\n".join(
+                    filter(None, (context.raw_text, attachment_text))
+                )
+        socketio.emit("filename_recognized", safe_name)
+
+
+def _move_to_processed(imap, message_number: bytes, config: dict[str, Any]) -> None:
+    folder = str(config.get("processed_folder", DEFAULT_PROCESSED_FOLDER))
+    create_status, _ = imap.create(folder)
+    if create_status not in {"OK", "NO"}:
+        raise ProcessingError(f"Could not create or access IMAP folder {folder}")
+
+    status, response = imap.copy(message_number, folder)
+    _require_ok(status, f"copy message to {folder}", response)
+    status, response = imap.store(message_number, "+FLAGS", r"(\Deleted)")
+    _require_ok(status, "mark source message deleted", response)
+    status, response = imap.expunge()
+    _require_ok(status, "expunge source message", response)
+
+
+def _mark_for_manual_processing(imap, message_number: bytes) -> None:
+    try:
+        imap.store(message_number, "+FLAGS", r"(\Flagged \Seen)")
+    except imaplib.IMAP4.error:
+        pass
+
+
+def _decode_part(part: Message) -> str:
+    payload = part.get_payload(decode=True)
+    if not payload:
+        return ""
+    encodings = [
+        part.get_content_charset(),
+        "utf-8",
+        "windows-1251",
+        "latin-1",
+    ]
+    for encoding in filter(None, encodings):
+        try:
+            return payload.decode(encoding)
+        except (UnicodeDecodeError, LookupError):
+            continue
+    return payload.decode("utf-8", errors="replace")
+
+
+def _unique_name(name: str, used_names: set[str]) -> str:
+    candidate = name
+    stem = Path(name).stem
+    suffix = Path(name).suffix
+    index = 2
+    while candidate.casefold() in used_names:
+        candidate = f"{stem}-{index}{suffix}"
+        index += 1
+    used_names.add(candidate.casefold())
+    return candidate
+
+
+def _require_ok(status: str, action: str, response=None) -> None:
+    if status != "OK":
+        raise ProcessingError(f"IMAP failed to {action}: {response}")
+
+
+def _safe_logout(imap) -> None:
+    try:
         imap.close()
+    except (imaplib.IMAP4.error, OSError):
+        pass
+    try:
         imap.logout()
-        
-        print("Все письма обработаны. Повторная проверка через 30 секунд")
-        time.sleep(30)
-        check_email(socketio)
-        
-    except Exception as e:
-        print(f"При обработке почты возникла ошибка: {e}")
-        socketio.emit('error', str(e))
-        
-        imap.close()
-        imap.logout()
-        
-        send_error_task.create_error_task(subject, sender, reason=error_reason or str(e))
-        
-        socketio.emit('reset')
-        time.sleep(10)
-        check_email(socketio)
+    except (imaplib.IMAP4.error, OSError):
+        pass

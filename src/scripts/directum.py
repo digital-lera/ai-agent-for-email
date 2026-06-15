@@ -1,302 +1,249 @@
-import requests
-from pathlib import Path
-import sys
-from dateutil import parser
-import json
-import re
-import warnings
+from __future__ import annotations
+
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from difflib import SequenceMatcher
+from pathlib import Path
+from typing import Any
 
-from fuzzywuzzy import process, fuzz
+import requests
 
-def directum():
+from src.backend.models import ExtractedData, ProcessingError
 
-    global DIRECTUM_URL
-    global AUTH
 
-    global SIGNEDBY_ID
-    global CONTACT_ID
-    global COUNTERPARTY_ID
-    global RESULT_DOCUMENT_ID
+DEFAULT_TIMEOUT = 30
 
-    global MAIN_REFINED_DATA
-    global ERROR_TASK_PERFORMER_ID
 
-    global scripts_dir
+def _person_key(value: str) -> str:
+    parts = value.split()
+    if len(parts) < 2:
+        return ""
+    return f"{parts[0]} {parts[1][0]}"
 
-    global ERRORS
 
-    DIRECTUM_URL = "адрес сервера для доступа к Directum RX" 
-    AUTH = ("логин/пароль для доступа к серверу", "TODO: basic аутентификацию сменить") 
+def find_fuzzy_id(
+    items: list[dict[str, Any]],
+    name_to_find: str,
+    *,
+    is_person: bool = False,
+    threshold: int = 80,
+) -> int:
+    candidates = []
+    for item in items:
+        name = str(item.get("Name", ""))
+        candidate = _person_key(name) if is_person else name
+        if candidate:
+            candidates.append((candidate, item.get("Id")))
 
-    scripts_dir = Path(__file__).resolve().parent.parent / "scripts"
-
-   
-
-    ERRORS = []
-    MAIN_REFINED_DATA = {"Ключевые данные":"Полученные после обработки "}
-
-    with open(scripts_dir / "login.json", "r") as file:
-        auth_data = json.load(file)
-        print("логин получен")
-
-    DIRECTUM_URL = f"{auth_data['odataurl']}"
-
-    AUTH = (f"{auth_data['username']}", f"{auth_data['password']}")
-
-    ERROR_TASK_PERFORMER_ID = auth_data['performer_id']
-
-    SIGNEDBY_ID = ERROR_TASK_PERFORMER_ID
-    CONTACT_ID = ERROR_TASK_PERFORMER_ID
-    COUNTERPARTY_ID = ERROR_TASK_PERFORMER_ID
-    RESULT_DOCUMENT_ID = ERROR_TASK_PERFORMER_ID
-
-    # TODO: пока скрыты предупреждения о недействительных сертификатах
-    warnings.filterwarnings("ignore", message="Unverified HTTPS request")
-
-    # Забираем из файла готовые данные, взятые из письма LLM-моделью
-    with open(scripts_dir / "processed_data.json", "r") as file:
-        MAIN_REFINED_DATA = json.load(file)
-        print("json получен")
-        
-
-    SIGNEDBY_ID = get_signed_by_contact()
-    CONTACT_ID = get_recipient()
-    COUNTERPARTY_ID = get_contragent()
-
-    RESULT_DOCUMENT_ID = create_incoming_letter()
-
-    add_files_to_incoming_letter() 
-
-    if len(ERRORS) > 0:
-        create_simple_task(ERRORS, RESULT_DOCUMENT_ID)
-
-def find_fuzzy_name(response_with_names, name_to_find, is_name = False):
-    json_str = response_with_names.content.decode("utf-8")
-
-    def get_surname_and_first_letter(text):
-        match = re.match(r'^(\S+)\s+(\S)', text)
-        return match.group(1) + " " + match.group(2) if match else ""
-
-    if len(json_str) > 0:
-        json_data = json.loads(json_str)
-        counterlist = [data_unit["Name"] for data_unit in json_data["value"]]
-
-        if is_name:
-            best_match = process.extractOne(
-                get_surname_and_first_letter(name_to_find), 
-                [get_surname_and_first_letter(name) for name in counterlist], 
-                scorer=fuzz.ratio)
-        else:
-            best_match = process.extractOne(
-                name_to_find, 
-                counterlist, 
-                scorer=fuzz.ratio)
-        if best_match:
-            matched_username, score = best_match
-
-            if score >= 80:
-                matched_id = next(
-                    data_unit["Id"]
-                    for data_unit in json_data["value"]
-                    if matched_username in data_unit["Name"]
-                )
-                return matched_id
-    
-    return -1
-
-def create_simple_task(error_text, attachment_id):
-    error_string = "\n".join(error_text)
-    task_text = f"Данные из  письма (см. вложения) не были обработаны корректно. Система вернула следующие ошибки: \n{error_string} \n\nПроверьте письмо. Если оно не содержит вышеописанных ошибок, просьба связаться с разработчиками."
-    headers = {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "Return": "representation",
-    }
-
-    request = requests.post(
-        f"{DIRECTUM_URL}/Docflow/CreateSimpleTask",
-        verify=False,
-        auth=AUTH,
-        headers=headers,
-        json={
-            "assignmentType": "Assignment",
-            "deadline": (datetime.now() + timedelta(days=1)).isoformat() + "Z",
-            "subject": "Входящее письмо обработано с ошибкой.",
-            "importance": "Normal",
-            "text": f"{task_text}",
-            "performerIds": [ERROR_TASK_PERFORMER_ID],  # Array of longs
-            "observerIds": [ERROR_TASK_PERFORMER_ID],  # Empty array
-            "documentIds": [attachment_id],  # Empty array
-        },
-
-    )
-
-def get_signed_by_contact():
-    # Ищем подписанта: обрезаем строку так, чтобы в ней точно не было лишних символов
-    
-    string_to_find = re.sub(r"[^а-яёА-ЯЁ ]", "", MAIN_REFINED_DATA["signedBy"])
-
-    matched_id = -1
-    if len(string_to_find) < 1:
-        print("Имя адресата не найдено в письме")
-    else:
-        doc_response_signedby = requests.get(
-            f"{DIRECTUM_URL}/IContacts?$filter=contains(Name,'{string_to_find[0]}')",
-            auth=AUTH,
-            verify=False,
+    target = _person_key(name_to_find) if is_person else name_to_find
+    scored = [
+        (
+            SequenceMatcher(
+                None,
+                target.casefold(),
+                candidate.casefold(),
+            ).ratio()
+            * 100,
+            candidate,
+            item_id,
         )
-        
-        
-        matched_id = find_fuzzy_name(doc_response_signedby, string_to_find, is_name=True)
+        for candidate, item_id in candidates
+    ]
+    if not scored:
+        return -1
 
-    if matched_id < 1:
-        print(
-            "Контакт подписанта не найден. Будет создана задача на добавление подписанта вручную."
+    score, _, item_id = max(scored)
+    return int(item_id) if score >= threshold else -1
+
+
+@dataclass
+class DirectumClient:
+    base_url: str
+    auth: tuple[str, str]
+    performer_id: int
+    verify_tls: bool = True
+    timeout: int = DEFAULT_TIMEOUT
+    session: requests.Session = field(default_factory=requests.Session)
+    errors: list[str] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        self.base_url = self.base_url.rstrip("/")
+        self.session.auth = self.auth
+        self.session.verify = self.verify_tls
+
+    @classmethod
+    def from_config(cls, config: dict[str, Any]) -> "DirectumClient":
+        try:
+            return cls(
+                base_url=str(config["odataurl"]),
+                auth=(str(config["username"]), str(config["password"])),
+                performer_id=int(config["performer_id"]),
+                verify_tls=_as_bool(config.get("verify_tls", True)),
+                timeout=int(config.get("request_timeout", DEFAULT_TIMEOUT)),
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ProcessingError(f"Invalid Directum configuration: {exc}") from exc
+
+    def _request(self, method: str, path: str, **kwargs) -> requests.Response:
+        try:
+            response = self.session.request(
+                method,
+                f"{self.base_url}{path}",
+                timeout=self.timeout,
+                **kwargs,
+            )
+            response.raise_for_status()
+            return response
+        except requests.RequestException as exc:
+            raise ProcessingError(
+                f"Directum request failed: {method} {path}: {exc}"
+            ) from exc
+
+    def _lookup(self, entity: str, name: str, *, is_person: bool = False) -> int:
+        if not name:
+            return -1
+
+        first_character = name[0].replace("'", "''")
+        response = self._request(
+            "GET",
+            f"/{entity}",
+            params={
+                "$filter": f"contains(Name,'{first_character}')",
+                "$select": "Id,Name",
+            },
         )
-        ERRORS.append(
-            f"Контакт подписавшего под именем {string_to_find} не найден в контактах. Tребуется создать новый контакт."
-        )
-    return matched_id
+        payload = response.json()
+        return find_fuzzy_id(payload.get("value", []), name, is_person=is_person)
 
-def get_recipient():
+    def create_incoming_letter(
+        self,
+        data: ExtractedData,
+        attachments: list[Path],
+    ) -> int:
+        signed_by_id = self._lookup("IContacts", data.signed_by, is_person=True)
+        recipient_id = self._lookup("IEmployees", data.recipient, is_person=True)
+        counterparty_id = self._lookup("ICounterparties", data.correspondent)
 
-    print("Ищем получателя письма")
-    string_to_find = re.sub(r"[^а-яёА-ЯЁ ]", "", MAIN_REFINED_DATA["recipient"])
-    
-    matched_id = -1
+        if data.signed_by and signed_by_id < 1:
+            self.errors.append(
+                f"Контакт подписанта '{data.signed_by}' не найден."
+            )
+        if data.recipient and recipient_id < 1:
+            self.errors.append(f"Адресат '{data.recipient}' не найден.")
+        if data.correspondent and counterparty_id < 1:
+            self.errors.append(
+                f"Контрагент '{data.correspondent}' не найден."
+            )
 
-    if len(string_to_find) < 1:
-        print("Имя адресата не найдено в письме")
-    else:
-        doc_response_contact = requests.get(
-            f"{DIRECTUM_URL}/IEmployees?$filter=contains(Name,'{string_to_find[0]}')",
-            auth=AUTH,
-            verify=False,
-        )
-        matched_id = find_fuzzy_name(doc_response_contact, string_to_find, is_name=True)
-
-    if matched_id < 1:
-        print(
-            "Адресат письма не найден среди сотрудников. Будет создана задача на добавление адресата вручную."
-        )
-        ERRORS.append(
-            f"Адресат под именем {string_to_find} не найден среди сотрудников. Требуется перепроверить правильность указанного имени"
-        )
-    return matched_id
-
-def get_contragent():
-    # Ищем контрагента
-    string_to_find = re.sub(r"[^а-яёА-ЯЁ ]", "", MAIN_REFINED_DATA["correspondent"])
-
-    matched_id = -1
-    
-    if len(string_to_find) < 1:
-        print("Имя контрагента не найдено в письме")
-    else:
-        doc_response_contragent = requests.get(
-            f"{DIRECTUM_URL}/ICounterparties?$filter=contains(Name,'{string_to_find[0]}')",
-            auth=AUTH,
-            verify=False,
-        )
-        matched_id = find_fuzzy_name(doc_response_contragent, string_to_find)
-
-    if matched_id < 1:
-        print(
-            "Обнаруженный контрагент не найден в списках. Будет создана задача на добавление контрагента вручную."
-        )
-        ERRORS.append(
-            f"Контрагент под именем {string_to_find} не найден среди сотрудников. Требуется перепроверить правильность указанного имени"
-        )
-    return matched_id
-
-def create_incoming_letter():
-
-    # Создаем входящее письмо
-    doc_response = requests.post(
-        f"{DIRECTUM_URL}/IIncomingLetters",
-        json={
-            "Name": f"{MAIN_REFINED_DATA['content']}",
-            "Subject": f"{MAIN_REFINED_DATA['content']}",
-            "Correspondent@odata.bind": f"{DIRECTUM_URL}/ICounterparties({COUNTERPARTY_ID})",
-            "Dated": f"{parser.parse(MAIN_REFINED_DATA['dateFrom']).date()}",
-            "InNumber": f"{MAIN_REFINED_DATA['number']}",
-            "SignedBy@odata.bind": (
-                f"{DIRECTUM_URL}/IContacts({SIGNEDBY_ID})" if SIGNEDBY_ID != -1 else ""
+        payload: dict[str, Any] = {
+            "Name": data.content,
+            "Subject": data.content,
+            "InNumber": data.number,
+            "Note": (
+                "ДОКУМЕНТ ОБРАБОТАН ИИ-АГЕНТОМ, "
+                "данные необходимо перепроверить"
             ),
-            "Addressee@odata.bind": (
-                f"{DIRECTUM_URL}/IEmployee({CONTACT_ID})" if CONTACT_ID != -1 else ""
+        }
+        if data.date_from:
+            payload["Dated"] = datetime.strptime(
+                data.date_from, "%d.%m.%Y"
+            ).date().isoformat()
+        if counterparty_id > 0:
+            payload["Correspondent@odata.bind"] = (
+                f"{self.base_url}/ICounterparties({counterparty_id})"
+            )
+        if signed_by_id > 0:
+            payload["SignedBy@odata.bind"] = (
+                f"{self.base_url}/IContacts({signed_by_id})"
+            )
+        if recipient_id > 0:
+            payload["Addressee@odata.bind"] = (
+                f"{self.base_url}/IEmployees({recipient_id})"
+            )
+
+        response = self._request("POST", "/IIncomingLetters", json=payload)
+        try:
+            document_id = int(response.json()["Id"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ProcessingError(
+                "Directum did not return an incoming letter ID"
+            ) from exc
+
+        for attachment in attachments:
+            self._upload_attachment(document_id, attachment)
+
+        if self.errors:
+            self._create_review_task(document_id)
+        return document_id
+
+    def _upload_attachment(self, document_id: int, attachment: Path) -> None:
+        try:
+            content = attachment.read_bytes()
+        except OSError as exc:
+            raise ProcessingError(
+                f"Failed to read attachment {attachment.name}: {exc}"
+            ) from exc
+        if not content:
+            raise ProcessingError(f"Attachment {attachment.name} is empty")
+
+        version_response = self._request(
+            "POST",
+            f"/IIncomingLetters({document_id})/Versions",
+            headers={"Return": "representation"},
+            json={
+                "Note": f"Файл, приложенный к письму: {attachment.name}",
+                "AssociatedApplication": {"Id": 3},
+            },
+        )
+        try:
+            version_id = int(version_response.json()["Id"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ProcessingError(
+                f"Directum did not return a version ID for {attachment.name}"
+            ) from exc
+
+        self._request(
+            "PUT",
+            (
+                f"/IIncomingLetters({document_id})/Versions"
+                f"({version_id})/Body/$value"
             ),
-            "Note": "ДОКУМЕНТ ОБРАБОТАН ИИ-АГЕНТОМ, данные необходимо перепроверить"
-        },
-        auth=AUTH,
-        verify=False,
-    )
-
-    if doc_response.status_code > 300:
-        print(f"Документ не создан, ошибка {doc_response.status_code}")
-
-        raise ValueError(f"Произошла ошибка {doc_response.status_code}. Документ не будет создан")
-    else:
-        return doc_response.json()["Id"]
-
-def add_files_to_incoming_letter():
-
-    with open(scripts_dir / "filename.txt", "r") as f:
-            pdf_path = f.read()
-
-    pdf_bytes = b""
-
-    try:
-        with open(f"{scripts_dir}/input_data/{pdf_path}", "rb") as pdf_file:
-            pdf_bytes = pdf_file.read()
-    except:
-        print("Файл не найден. Ошибка в пути")
-
-    headers = {"Return": "representation"}
-
-    version_payload = {
-        "Note": "Файл, приложенный к письму",
-        "AssociatedApplication": {"Id": 3},  # Adjust per metadata
-    }
-
-    version_response = requests.post(
-        f"{DIRECTUM_URL}/IIncomingLetters({RESULT_DOCUMENT_ID})/Versions",
-        headers=headers,
-        json=version_payload,
-        auth=AUTH,
-        verify=False,
-    )
-
-    if version_response.status_code < 300:
-        new_version_data = version_response.json()
-        version_id = new_version_data["Id"]
-    else:
-        ERRORS.append(
-            f"Версия документа не создана."
-        )
-        sys.exit(f"Версия документа не создана, ошибка {version_response.status_code}")
-
-    session = requests.Session()
-    session.verify = False
-    session.auth = AUTH
-
-    stream_url = (
-        f"{DIRECTUM_URL}/IIncomingLetters({RESULT_DOCUMENT_ID})/Versions({version_id})/Body/$value"
-    )
-
-    headers = {"Content-Type": "application/octet-stream", "Accept": "application/json"}
-    response = session.put(stream_url, headers=headers, data=pdf_bytes)
-
-    if response.status_code in [200, 204]:
-        print("PDF документ успешно загружен")
-    else:
-        ERRORS.append(
-            f"PDF документ не был корректно добавлен в версию документа. Требуется загрузить новую версию вручную"
-        )
-        print(
-            f"Документ не был загружен. Ошибка: {response.status_code} - {response.content.decode('utf-8')}"
+            headers={
+                "Content-Type": "application/octet-stream",
+                "Accept": "application/json",
+            },
+            data=content,
         )
 
-if __name__ == "__main__":
-    directum()
+    def _create_review_task(self, document_id: int) -> None:
+        error_text = "\n".join(self.errors)
+        self._request(
+            "POST",
+            "/Docflow/CreateSimpleTask",
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "Return": "representation",
+            },
+            json={
+                "assignmentType": "Assignment",
+                "deadline": (
+                    datetime.now().astimezone() + timedelta(days=1)
+                ).isoformat(),
+                "subject": "Входящее письмо обработано с ошибкой.",
+                "importance": "Normal",
+                "text": (
+                    "Некоторые данные письма требуют ручной проверки:\n"
+                    f"{error_text}"
+                ),
+                "performerIds": [self.performer_id],
+                "observerIds": [self.performer_id],
+                "documentIds": [document_id],
+            },
+        )
+
+
+def _as_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() not in {"0", "false", "no", "off"}

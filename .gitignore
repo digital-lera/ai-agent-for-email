@@ -210,8 +210,10 @@ __marimo__/
 **/log.html
 **/report.html
 scripts/input_data/
+src/scripts/jobs/
 *.txt
 !requirements.txt
+!requirements-test.txt
 !prompt_for_json.txt
 !prompt_for_preprocessing.txt
 **.json

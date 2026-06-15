@@ -1,16 +1,17 @@
 from gevent import monkey
 monkey.patch_all()
 
-from flask import Flask, render_template, jsonify
-from flask_socketio import SocketIO
-
+import os
 import time
 
+from flask import Flask, render_template
+from flask_socketio import SocketIO
 
 import src.backend.email_check as email_worker
 
 app = Flask(__name__, template_folder="src/frontend/templates", static_folder="src/frontend/static")
-socketio = SocketIO(app, cors_allowed_origins="*")
+cors_origins = os.getenv("SOCKETIO_CORS_ORIGINS")
+socketio = SocketIO(app, cors_allowed_origins=cors_origins if cors_origins else None)
 
 @app.route('/')
 def index():
@@ -19,12 +20,9 @@ def index():
 def process_email(socketio):
     while True:
         try:
-            # Your email checking logic here
             email_worker.check_email(socketio)
         except Exception as e:
             socketio.emit('error', {'message': str(e)})
-        
-        # Wait 30 seconds before next iteration
         time.sleep(30)
 
 
