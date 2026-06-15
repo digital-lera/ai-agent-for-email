@@ -105,6 +105,69 @@ class DirectumClient:
                 f"Directum request failed: {method} {path}: {exc}"
             ) from exc
 
+    @staticmethod
+    def _extract_task_id(response: requests.Response) -> int:
+        try:
+            payload = response.json()
+        except ValueError as exc:
+            raise ProcessingError(
+                "Directum did not return a simple task ID"
+            ) from exc
+
+        if isinstance(payload, bool):
+            task_id = None
+        elif isinstance(payload, int):
+            task_id = payload
+        elif isinstance(payload, str) and payload.strip().isdigit():
+            task_id = int(payload.strip())
+        elif isinstance(payload, dict):
+            task_id = next(
+                (
+                    payload[key]
+                    for key in ("Id", "id", "Value", "value")
+                    if payload.get(key) is not None
+                ),
+                None,
+            )
+        else:
+            task_id = None
+
+        if isinstance(task_id, str) and task_id.strip().isdigit():
+            task_id = int(task_id.strip())
+
+        if not isinstance(task_id, int) or isinstance(task_id, bool):
+            raise ProcessingError(
+                f"Directum returned an invalid simple task ID: {payload!r}"
+            )
+        return task_id
+
+    def create_and_start_simple_task(self, payload: dict[str, Any]) -> int:
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Return": "representation",
+        }
+        response = self._request(
+            "POST",
+            "/Docflow/CreateSimpleTask",
+            headers=headers,
+            json=payload,
+        )
+        task_id = self._extract_task_id(response)
+        print(
+            f"Простая задача создана, id={task_id}. Отправка задачи...",
+            flush=True,
+        )
+
+        self._request(
+            "POST",
+            "/Docflow/StartTask",
+            headers=headers,
+            json={"taskId": task_id},
+        )
+        print(f"Простая задача id={task_id} отправлена.", flush=True)
+        return task_id
+
     def _lookup(self, entity: str, name: str, *, is_person: bool = False) -> int:
         if not name:
             print(f"Поиск {entity} пропущен: значение пустое.", flush=True)
@@ -254,15 +317,8 @@ class DirectumClient:
     def _create_review_task(self, document_id: int) -> None:
         print(f"Создание задачи проверки для документа {document_id}.", flush=True)
         error_text = "\n".join(self.errors)
-        self._request(
-            "POST",
-            "/Docflow/CreateSimpleTask",
-            headers={
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-                "Return": "representation",
-            },
-            json={
+        task_id = self.create_and_start_simple_task(
+            {
                 "assignmentType": "Assignment",
                 "deadline": (
                     datetime.now().astimezone() + timedelta(days=1)
@@ -278,4 +334,7 @@ class DirectumClient:
                 "documentIds": [document_id],
             },
         )
-        print("Задача проверки создана.", flush=True)
+        print(
+            f"Задача проверки создана и отправлена, id={task_id}.",
+            flush=True,
+        )

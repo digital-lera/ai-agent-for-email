@@ -30,6 +30,8 @@ class FakeSession:
         if url.endswith("/Versions"):
             self.version_id += 1
             return response({"Id": self.version_id})
+        if url.endswith("/Docflow/CreateSimpleTask"):
+            return response(77)
         return response({})
 
 
@@ -113,6 +115,20 @@ class DirectumClientTests(unittest.TestCase):
                 call[1].endswith("/Docflow/CreateSimpleTask")
                 for call in session.calls
             )
+        )
+        start_calls = [
+            call
+            for call in session.calls
+            if call[1].endswith("/Docflow/StartTask")
+        ]
+        self.assertEqual(len(start_calls), 1)
+        self.assertEqual(start_calls[0][2]["json"], {"taskId": 77})
+        self.assertIs(start_calls[0][2]["verify"], False)
+
+    def test_extracts_task_id_from_wrapped_response(self):
+        self.assertEqual(
+            DirectumClient._extract_task_id(response({"value": "81"})),
+            81,
         )
 
 
