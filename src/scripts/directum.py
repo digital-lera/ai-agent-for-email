@@ -61,7 +61,6 @@ class DirectumClient:
     base_url: str
     auth: tuple[str, str]
     performer_id: int
-    verify_tls: bool = True
     timeout: int = DEFAULT_TIMEOUT
     session: requests.Session = field(default_factory=requests.Session)
     errors: list[str] = field(default_factory=list)
@@ -69,7 +68,7 @@ class DirectumClient:
     def __post_init__(self) -> None:
         self.base_url = self.base_url.rstrip("/")
         self.session.auth = self.auth
-        self.session.verify = self.verify_tls
+        self.session.verify = False
 
     @classmethod
     def from_config(cls, config: dict[str, Any]) -> "DirectumClient":
@@ -78,7 +77,6 @@ class DirectumClient:
                 base_url=str(config["odataurl"]),
                 auth=(str(config["username"]), str(config["password"])),
                 performer_id=int(config["performer_id"]),
-                verify_tls=_as_bool(config.get("verify_tls", True)),
                 timeout=int(config.get("request_timeout", DEFAULT_TIMEOUT)),
             )
         except (KeyError, TypeError, ValueError) as exc:
@@ -90,6 +88,7 @@ class DirectumClient:
             response = self.session.request(
                 method,
                 f"{self.base_url}{path}",
+                verify=False,
                 timeout=self.timeout,
                 **kwargs,
             )
@@ -274,9 +273,3 @@ class DirectumClient:
             },
         )
         print("Задача проверки создана.", flush=True)
-
-
-def _as_bool(value: Any) -> bool:
-    if isinstance(value, bool):
-        return value
-    return str(value).strip().lower() not in {"0", "false", "no", "off"}

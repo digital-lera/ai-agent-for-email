@@ -25,7 +25,7 @@ def get_metadata_status_code(username, password, url_address):
     metadata_response = requests.get(
         f"{ADDRESS}/$metadata",
         auth=AUTH,
-        verify=True,
+        verify=False,
         timeout=30,
     )
 

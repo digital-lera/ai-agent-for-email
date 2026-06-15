@@ -17,7 +17,6 @@ contain:
   "performer_id": 123,
   "imap_server": "ukexch.uktaif.ru",
   "processed_folder": "AI",
-  "verify_tls": true,
   "request_timeout": 30,
   "max_attachment_bytes": 52428800,
   "ocr_gpu": true,
@@ -28,8 +27,8 @@ contain:
 }
 ```
 
-`verify_tls` defaults to `true`. Disable it only for a controlled development
-environment with a known self-signed certificate.
+All Directum RX requests use `verify=False` because this deployment's API
+requires TLS certificate verification to be disabled.
 
 `ocr_gpu` defaults to `true`. The application container is configured with an
 NVIDIA GPU reservation and EasyOCR refuses to silently fall back to CPU. At

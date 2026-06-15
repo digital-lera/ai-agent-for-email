@@ -9,12 +9,6 @@ from src.backend.models import ProcessingError
 DEFAULT_TIMEOUT = 30
 
 
-def _as_bool(value: Any) -> bool:
-    if isinstance(value, bool):
-        return value
-    return str(value).strip().lower() not in {"0", "false", "no", "off"}
-
-
 def create_error_task(
     subject: str,
     sender: str,
@@ -29,7 +23,6 @@ def create_error_task(
         base_url = str(config["odataurl"]).rstrip("/")
         auth = (str(config["username"]), str(config["password"]))
         performer_id = int(config["performer_id"])
-        verify_tls = _as_bool(config.get("verify_tls", True))
         timeout = int(config.get("request_timeout", DEFAULT_TIMEOUT))
     except (KeyError, TypeError, ValueError) as exc:
         raise ProcessingError(
@@ -46,7 +39,7 @@ def create_error_task(
         print("Отправка задачи об ошибке в Directum...", flush=True)
         response = requests.post(
             f"{base_url}/Docflow/CreateSimpleTask",
-            verify=verify_tls,
+            verify=False,
             timeout=timeout,
             auth=auth,
             headers={

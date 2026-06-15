@@ -72,6 +72,8 @@ class DirectumClientTests(unittest.TestCase):
             document_id = client.create_incoming_letter(data, [first, second])
 
         self.assertEqual(document_id, 42)
+        self.assertFalse(session.verify)
+        self.assertTrue(all(call[2]["verify"] is False for call in session.calls))
         letter_payload = session.calls[0][2]["json"]
         self.assertNotIn("Correspondent@odata.bind", letter_payload)
         self.assertNotIn("SignedBy@odata.bind", letter_payload)
