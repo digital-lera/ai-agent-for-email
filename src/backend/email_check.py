@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from src.backend.models import MessageContext, ProcessingError
+from src.backend.statistics import emit_statistics, increment_and_emit
 from src.scripts.send_error_task import create_error_task
 
 
@@ -76,6 +77,7 @@ def check_email(socketio) -> int:
     print("\nПроверка почты...", flush=True)
     config = load_config()
     print(f"Конфигурация загружена из {LOGIN_PATH}", flush=True)
+    emit_statistics(socketio)
     imap = None
     try:
         imap = _connect(config)
@@ -154,15 +156,27 @@ def _process_one_message(
 
     socketio.emit("reset")
     socketio.emit("new_email", {"subject": subject, "sender": sender})
+    statistics_tracked = False
     try:
         _save_attachments(message, context, socketio, config)
+        if not context.pdf_attachments:
+            print(
+                "PDF-вложения не найдены. Письмо не передается в pipeline.",
+                flush=True,
+            )
+            _mark_for_manual_processing(imap, message_number)
+            return
+
+        increment_and_emit(socketio, "received", context.message_id)
+        statistics_tracked = True
         from src.backend.process_message import run_chain
 
         result = run_chain(socketio, context, config)
         if not result.success:
             raise ProcessingError(result.error or "Processing pipeline failed")
-        print("Все этапы успешны. Перемещение письма в обработанные.", flush=True)
-        _move_to_processed(imap, message_number, config)
+        if statistics_tracked:
+            outcome = "partial" if result.review_task_created else "successful"
+            increment_and_emit(socketio, outcome, context.message_id)
     except Exception as exc:
         print(f"Письмо обработать не удалось: {exc}", flush=True)
         socketio.emit("error", {"message": str(exc)})
@@ -172,12 +186,25 @@ def _process_one_message(
             print("Создание задачи об ошибке в Directum RX...", flush=True)
             create_error_task(subject, sender, str(exc), config)
             print("Задача об ошибке создана.", flush=True)
+            if statistics_tracked:
+                increment_and_emit(socketio, "manual", context.message_id)
         except Exception as task_exc:
             print(f"Не удалось создать задачу об ошибке: {task_exc}", flush=True)
             socketio.emit(
                 "error",
                 {"message": f"{exc}; error task also failed: {task_exc}"},
             )
+    else:
+        print("Все этапы успешны. Перемещение письма в обработанные.", flush=True)
+        try:
+            _move_to_processed(imap, message_number, config)
+        except Exception as move_exc:
+            print(
+                f"Обработка завершена, но письмо не перемещено: {move_exc}",
+                flush=True,
+            )
+            socketio.emit("error", {"message": str(move_exc)})
+            _mark_for_manual_processing(imap, message_number)
     finally:
         print(f"Очистка рабочей директории: {context.work_dir}", flush=True)
         context.cleanup()

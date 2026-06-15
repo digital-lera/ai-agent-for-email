@@ -44,13 +44,18 @@ def run_chain(socketio, context: MessageContext, config: dict) -> PipelineResult
                 state["extracted_data"].to_dict(),
             )
 
-    document_id = state["document_id"]
+    directum_result = state["directum_result"]
+    document_id = directum_result.document_id
     print(
         f"Обработка письма полностью завершена. Directum document_id={document_id}",
         flush=True,
     )
     socketio.emit("chain_complete", {"document_id": document_id})
-    return PipelineResult(success=True, document_id=document_id)
+    return PipelineResult(
+        success=True,
+        document_id=document_id,
+        review_task_created=directum_result.review_task_created,
+    )
 
 
 def _extract_text(state):
@@ -101,7 +106,7 @@ def _create_document(state):
 
     client = DirectumClient.from_config(state["config"])
     print("Начинается создание документа в Directum RX.", flush=True)
-    state["document_id"] = client.create_incoming_letter(
+    state["directum_result"] = client.create_incoming_letter(
         state["extracted_data"],
         state["context"].pdf_attachments,
     )

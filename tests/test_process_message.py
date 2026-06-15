@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from src.backend.models import ExtractedData, MessageContext
+from src.backend.models import DirectumResult, ExtractedData, MessageContext
 from src.backend.process_message import run_chain
 
 
@@ -53,7 +53,10 @@ class PipelineTests(unittest.TestCase):
             state["extracted_data"] = extracted
 
         def set_document(state):
-            state["document_id"] = 42
+            state["directum_result"] = DirectumResult(
+                document_id=42,
+                review_task_created=False,
+            )
 
         with tempfile.TemporaryDirectory() as directory:
             context = MessageContext(
@@ -75,6 +78,7 @@ class PipelineTests(unittest.TestCase):
 
         events = [event for event, _ in socket.events]
         self.assertTrue(result.success)
+        self.assertFalse(result.review_task_created)
         self.assertIn("json_data_received", events)
         self.assertIn("chain_complete", events)
         self.assertNotIn("reset", events)

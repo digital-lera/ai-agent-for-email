@@ -69,9 +69,10 @@ class DirectumClientTests(unittest.TestCase):
             second = Path(directory) / "second.pdf"
             first.write_bytes(b"first")
             second.write_bytes(b"second")
-            document_id = client.create_incoming_letter(data, [first, second])
+            result = client.create_incoming_letter(data, [first, second])
 
-        self.assertEqual(document_id, 42)
+        self.assertEqual(result.document_id, 42)
+        self.assertFalse(result.review_task_created)
         self.assertFalse(session.verify)
         self.assertTrue(all(call[2]["verify"] is False for call in session.calls))
         letter_payload = session.calls[0][2]["json"]
@@ -83,6 +84,35 @@ class DirectumClientTests(unittest.TestCase):
         self.assertEqual(
             [call[2]["data"] for call in put_calls],
             [b"first", b"second"],
+        )
+
+    def test_reports_review_task_creation(self):
+        session = FakeSession()
+        client = DirectumClient(
+            base_url="https://directum.example",
+            auth=("user", "password"),
+            performer_id=1,
+            session=session,
+        )
+        data = ExtractedData.from_mapping(
+            {
+                "content": "Текст",
+                "correspondent": "Неизвестная компания",
+                "dateFrom": "",
+                "number": "",
+                "signedBy": "",
+                "recipient": "",
+            }
+        )
+
+        result = client.create_incoming_letter(data, [])
+
+        self.assertTrue(result.review_task_created)
+        self.assertTrue(
+            any(
+                call[1].endswith("/Docflow/CreateSimpleTask")
+                for call in session.calls
+            )
         )
 
 

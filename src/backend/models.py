@@ -146,4 +146,11 @@ class ExtractedData:
 class PipelineResult:
     success: bool
     document_id: int | None = None
+    review_task_created: bool = False
     error: str | None = None
+
+
+@dataclass(frozen=True)
+class DirectumResult:
+    document_id: int
+    review_task_created: bool

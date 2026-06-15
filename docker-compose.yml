@@ -11,6 +11,7 @@ services:
       - OLLAMA_HOST=http://taif-mail-ollama:11434
       - OCR_GPU=true
       - OCR_CUDA_DEVICE=0
+      - STATISTICS_TIMEZONE=Europe/Moscow
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     restart: unless-stopped

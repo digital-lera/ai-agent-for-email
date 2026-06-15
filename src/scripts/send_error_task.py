@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Any
+import warnings
 
 import requests
 
@@ -7,6 +8,7 @@ from src.backend.models import ProcessingError
 
 
 DEFAULT_TIMEOUT = 30
+warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
 
 def create_error_task(

@@ -46,6 +46,11 @@ The message is moved to the processed IMAP folder only after OCR, AI
 validation, Directum document creation, and all attachment uploads succeed.
 Failed messages are flagged for manual processing and produce a Directum task.
 
+Daily processing statistics are stored in `src/data/statistics.sqlite3` using
+the `Europe/Moscow` calendar date. The timezone can be changed with the
+`STATISTICS_TIMEZONE` environment variable. Counters are idempotent by email
+Message-ID, so polling the same email again does not increment it twice.
+
 ## Local verification
 
 ```bash

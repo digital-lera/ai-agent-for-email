@@ -164,25 +164,25 @@
                         <p class="statistics__list__element__field-name">
                             Писем пришло за день:
                         </p>
-                        <p class="statistics__list__element__number">-</p>
+                        <p class="statistics__list__element__number" id="statistics-received">0</p>
                     </li>
                     <li class="statistics__list__element">
                         <p class="statistics__list__element__field-name">
                             Успешно обработано ИИ-агентом:
                         </p>
-                        <p class="statistics__list__element__number">-</p>
+                        <p class="statistics__list__element__number" id="statistics-successful">0</p>
                     </li>
                     <li class="statistics__list__element">
                         <p class="statistics__list__element__field-name">
                             Частично обработано ИИ-агентом:
                         </p>
-                        <p class="statistics__list__element__number">-</p>
+                        <p class="statistics__list__element__number" id="statistics-partial">0</p>
                     </li>
                     <li class="statistics__list__element">
                         <p class="statistics__list__element__field-name">
                             Передано на ручную обработку:
                         </p>
-                        <p class="statistics__list__element__number">-</p>
+                        <p class="statistics__list__element__number" id="statistics-manual">0</p>
                     </li>
                 </ul>
             </div>
@@ -220,6 +220,17 @@
 
           socket.on("connect", () => {
               console.log("connected");
+          });
+
+          socket.on("statistics_update", data => {
+              document.getElementById("statistics-received").textContent =
+                data.received ?? 0;
+              document.getElementById("statistics-successful").textContent =
+                data.successful ?? 0;
+              document.getElementById("statistics-partial").textContent =
+                data.partial ?? 0;
+              document.getElementById("statistics-manual").textContent =
+                data.manual ?? 0;
           });
           
           socket.on('new_email', data => {

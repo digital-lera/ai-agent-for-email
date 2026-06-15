@@ -5,9 +5,10 @@ import os
 import time
 
 from flask import Flask, render_template
-from flask_socketio import SocketIO
+from flask_socketio import SocketIO, emit
 
 import src.backend.email_check as email_worker
+from src.backend.statistics import statistics_store
 
 app = Flask(__name__, template_folder="src/frontend/templates", static_folder="src/frontend/static")
 cors_origins = os.getenv("SOCKETIO_CORS_ORIGINS")
@@ -16,6 +17,12 @@ socketio = SocketIO(app, cors_allowed_origins=cors_origins if cors_origins else 
 @app.route('/')
 def index():
     return render_template('index.html')
+
+
+@socketio.on("connect")
+def send_initial_statistics(auth=None):
+    emit("statistics_update", statistics_store.get_today().to_dict())
+
 
 def process_email(socketio):
     while True:

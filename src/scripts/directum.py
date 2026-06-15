@@ -5,13 +5,15 @@ from datetime import datetime, timedelta
 from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any
+import warnings
 
 import requests
 
-from src.backend.models import ExtractedData, ProcessingError
+from src.backend.models import DirectumResult, ExtractedData, ProcessingError
 
 
 DEFAULT_TIMEOUT = 30
+warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
 
 def _person_key(value: str) -> str:
@@ -134,7 +136,7 @@ class DirectumClient:
         self,
         data: ExtractedData,
         attachments: list[Path],
-    ) -> int:
+    ) -> DirectumResult:
         print("Поиск связанных сущностей Directum...", flush=True)
         signed_by_id = self._lookup("IContacts", data.signed_by, is_person=True)
         recipient_id = self._lookup("IEmployees", data.recipient, is_person=True)
@@ -190,7 +192,8 @@ class DirectumClient:
         for attachment in attachments:
             self._upload_attachment(document_id, attachment)
 
-        if self.errors:
+        review_task_created = bool(self.errors)
+        if review_task_created:
             print(
                 f"Обнаружены неточные данные: {len(self.errors)}. "
                 "Создается задача на проверку.",
@@ -198,7 +201,10 @@ class DirectumClient:
             )
             self._create_review_task(document_id)
         print(f"Работа с Directum завершена, document_id={document_id}", flush=True)
-        return document_id
+        return DirectumResult(
+            document_id=document_id,
+            review_task_created=review_task_created,
+        )
 
     def _upload_attachment(self, document_id: int, attachment: Path) -> None:
         print(f"Подготовка файла к загрузке: {attachment.name}", flush=True)

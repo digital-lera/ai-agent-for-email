@@ -211,6 +211,8 @@ __marimo__/
 **/report.html
 scripts/input_data/
 src/scripts/jobs/
+src/data/*.sqlite3
+src/data/*.sqlite3-*
 *.txt
 !requirements.txt
 !requirements-test.txt
