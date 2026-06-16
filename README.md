@@ -1,12 +1,20 @@
 # TAIF-mail
-*AI tool for organizing corporate email inbox and refining email messages' key content*
 
-**🎉 [v0.1.0 pre-release](https://github.com/digital-lera/ai-agent-for-email/releases/tag/0.1.0) is out!**
+*AI-инструмент для обработки корпоративной почты и выделения ключевых данных из
+входящих писем*
 
-## Runtime configuration
+**[v0.1.0 pre-release](https://github.com/digital-lera/ai-agent-for-email/releases/tag/0.1.0) опубликован.**
 
-Create `src/scripts/login.json` locally. The file is ignored by Git and must
-contain:
+## Документация
+
+Полная документация проекта находится в [`docs/`](docs/README.md). Там есть
+описание архитектуры, конфигурации, правил Directum, тестов, сопровождения и
+пользовательский справочник по маршрутам обработки писем.
+
+## Конфигурация запуска
+
+Создайте локальный файл `src/scripts/login.json`. Файл игнорируется Git и
+должен содержать:
 
 ```json
 {
@@ -32,61 +40,62 @@ contain:
 }
 ```
 
-All Directum RX requests use `verify=False` because this deployment's API
-requires TLS certificate verification to be disabled.
+Все запросы к Directum RX используют `verify=False`, потому что API этого
+развертывания требует отключенной проверки TLS-сертификата.
 
-`ocr_gpu` defaults to `true`. The application container is configured with an
-NVIDIA GPU reservation and EasyOCR refuses to silently fall back to CPU. At
-startup it prints the PyTorch version, bundled CUDA runtime, CUDA availability,
-GPU name, VRAM, compute capability, and cuDNN version. `OCR_CUDA_DEVICE`
-selects the GPU index and defaults to `0`.
+`ocr_gpu` по умолчанию равен `true`. Контейнер приложения настроен с NVIDIA GPU
+reservation, а EasyOCR не должен незаметно переключаться на CPU. При запуске
+OCR выводит версию PyTorch, CUDA runtime, доступность CUDA, имя GPU, VRAM,
+compute capability и версию cuDNN. `OCR_CUDA_DEVICE` выбирает индекс GPU и по
+умолчанию равен `0`.
 
-The host CUDA/driver version and the CUDA runtime bundled with PyTorch do not
-need to have the same minor version. The NVIDIA driver must support the runtime
-reported by `torch.version.cuda`. During every page, OCR prints a heartbeat
-every `ocr_heartbeat_seconds`.
+Версия CUDA на хосте/драйвере и CUDA runtime внутри PyTorch не обязаны
+совпадать по minor-версии. Драйвер NVIDIA должен поддерживать runtime,
+показанный в `torch.version.cuda`. Во время обработки каждой страницы OCR
+печатает heartbeat каждые `ocr_heartbeat_seconds`.
 
-Each email is processed in an isolated directory under `src/scripts/jobs`.
-The message is moved to the processed IMAP folder only after OCR, AI
-validation, Directum document creation, and all attachment uploads succeed.
-Failed messages are flagged for manual processing and produce a Directum task.
+Каждое письмо обрабатывается в отдельной папке внутри `src/scripts/jobs`.
+Письмо переносится в обработанную IMAP-папку только после успешного OCR,
+валидации AI, создания документа Directum и загрузки всех вложений. Если
+обработка падает, письмо помечается для ручной обработки и создается задача в
+Directum.
 
-## Directum processing rules
+## Правила обработки Directum
 
-Rules that change or bypass Directum processing live in
-`src/scripts/directum_rules.json`. The file is regular JSON and can be edited
-without changing Python code.
+Правила, которые меняют или пропускают обработку Directum, находятся в
+`src/scripts/directum_rules.json`. Это обычный JSON-файл, который можно
+редактировать без изменения Python-кода.
 
-Each rule has:
+Каждое правило содержит:
 
-- `name`: human-readable label for logs.
-- `enabled`: set to `false` to temporarily disable a rule.
-- `when`: the condition.
-- `actions`: one or more actions to apply when the condition matches.
+- `name`: понятное имя правила для логов;
+- `enabled`: `false`, если правило нужно временно отключить;
+- `when`: условие;
+- `actions`: одно или несколько действий при совпадении условия.
 
-Supported conditions:
+Поддерживаемые условия:
 
-- `sender_email`: exact sender email match, case-insensitive.
-- `sender_contains`: text contained in the full `From` header.
-- `text_contains_any`: fuzzy match against the subject and email body.
-- `attachment_name_contains_any`: fuzzy match against attachment names without
-  extensions.
-- `signed_by_id`: Directum contact ID after lookup.
-- `recipient_id`: Directum employee ID after lookup.
-- `counterparty_id`: Directum counterparty ID after lookup.
-- `any_id`: matches signed-by, recipient, or counterparty ID.
+- `sender_email`: точное совпадение email отправителя без учета регистра;
+- `sender_contains`: текст содержится в полном заголовке `From`;
+- `text_contains_any`: нечеткое совпадение по теме и тексту письма;
+- `attachment_name_contains_any`: нечеткое совпадение по имени вложения без
+  расширения;
+- `signed_by_id`: ID контакта Directum после поиска;
+- `recipient_id`: ID сотрудника Directum после поиска;
+- `counterparty_id`: ID контрагента Directum после поиска;
+- `any_id`: совпадение по signed-by, recipient или counterparty ID.
 
-Supported actions:
+Поддерживаемые действия:
 
-- `skip_directum`: do not create an incoming letter in Directum. For email-level
-  rules, this also stops AI/OCR processing.
-- `replace_matched_id`: replace whichever ID matched the condition.
-- `set_signed_by_id`: force a specific `SignedBy` ID.
-- `set_recipient_id`: force a specific `Addressee` ID.
-- `set_counterparty_id`: force a specific correspondent ID.
-- `forward_email`: send the original email as an `.eml` attachment.
+- `skip_directum`: не создавать входящее письмо в Directum. Для правил уровня
+  письма это также останавливает AI/OCR;
+- `replace_matched_id`: заменить тот ID, который совпал с условием;
+- `set_signed_by_id`: принудительно выставить конкретный `SignedBy` ID;
+- `set_recipient_id`: принудительно выставить конкретный `Addressee` ID;
+- `set_counterparty_id`: принудительно выставить конкретный ID корреспондента;
+- `forward_email`: переслать исходное письмо как `.eml`-вложение.
 
-Example:
+Пример:
 
 ```json
 {
@@ -108,58 +117,66 @@ Example:
 }
 ```
 
-Forwarding rules require SMTP settings in `login.json`. By default the service
-uses `username` and `email-password` for SMTP login; override them with
-`smtp_username`, `smtp_password`, or `forward_from` if needed.
+Для правил пересылки нужны SMTP-настройки в `login.json`. По умолчанию сервис
+использует `username` и `email-password` для SMTP-логина. При необходимости их
+можно переопределить через `smtp_username`, `smtp_password` или `forward_from`.
 
-Daily processing statistics are stored in `src/data/statistics.sqlite3` using
-the `Europe/Moscow` calendar date. The timezone can be changed with the
-`STATISTICS_TIMEZONE` environment variable. Counters are idempotent by email
-Message-ID, so polling the same email again does not increment it twice.
+Дневная статистика хранится в `src/data/statistics.sqlite3` по календарному дню
+`Europe/Moscow`. Часовой пояс можно изменить через `STATISTICS_TIMEZONE`.
+Счетчики идемпотентны по `Message-ID`, поэтому повторная проверка одного и того
+же письма не увеличивает счетчик дважды.
 
-## Local verification
+## Локальная проверка
 
 ```bash
 python3 -m unittest discover -s tests -p "test_*.py" -v
 python3 -m pytest
 ```
 
-## Key features to add for the next release:
+## Идеи для следующих релизов
 
- ### 🧮 Interface
- - Dashboard with email data refinement history
- - Progress bars for every step of the refining process
- - WebSocket push notifications
- - Logs output window
- - Adjustable interval for inbox updates polling
- 
- ### 🎼 Automatization
- - Parallel refinement and task queue using Celery + Redis
- - *Retry*-logic for failures
- - Errors logged into a database
+### Интерфейс
 
- ### ⚒️ Data refinement
- - Deeper dive into PaddleOCR features, such as built-in key data selection
- - Additional log option with OCR results .png (color-coded)
- - Multiple models fallback for more accurate results
- - Adding message's subject, sender and raw text to the prompts
+- Дашборд с историей обработки писем.
+- Прогресс-бары для каждого этапа обработки.
+- Push-уведомления через WebSocket.
+- Окно вывода логов.
+- Настраиваемый интервал проверки почты.
 
- ### 💼 Directum integration
- - Migrating for RPA-operated Directum integration to using DirectumRX API (C#)
- - Generating a notification object for operators when results are dubious
- - Auto-generated "queue number" replies for senders
+### Автоматизация
 
- ### 🔑 Security
- - Add a secrets manager
- - All text data encoding on transit and storage
- - Logs anonymization
+- Параллельная обработка и очередь задач через Celery + Redis.
+- Retry-логика для сбоев.
+- Запись ошибок в базу данных.
 
- ### 🚀 Deployment
- - Docker Compose
- - Monitoring with Prometheus + Grafana
- - GitHub CI/CD
+### Выделение данных
 
- ### 🧪 Testing
- - End-to-end tests on a bigger number of samples
- - Load testing
- - Documentation
+- Более глубокое использование возможностей PaddleOCR.
+- Дополнительный лог с OCR-результатами в `.png` с цветовой разметкой.
+- Fallback между несколькими моделями для повышения точности.
+- Передача темы, отправителя и сырого текста письма в промпты.
+
+### Интеграция Directum
+
+- Переход от RPA-операций к Directum RX API.
+- Генерация уведомлений для операторов при сомнительных результатах.
+- Автоматические ответы отправителям с номером очереди.
+
+### Безопасность
+
+- Добавить secret manager.
+- Шифровать текстовые данные при передаче и хранении.
+- Анонимизировать логи.
+
+### Развертывание
+
+- Docker Compose.
+- Мониторинг через Prometheus + Grafana.
+- GitHub CI/CD.
+
+### Тестирование
+
+- End-to-end тесты на большем количестве примеров.
+- Нагрузочное тестирование.
+- Поддержание документации в актуальном состоянии.
+
