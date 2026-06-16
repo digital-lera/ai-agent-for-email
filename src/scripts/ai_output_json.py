@@ -51,7 +51,7 @@ def process_text_with_ai(email_content, output_path, attachment_names=()):
 
     preprocessing_prompt = _read_prompt("prompt_for_preprocessing.txt")
     json_prompt = _read_prompt("prompt_for_json.txt")
-    filenames = "\n".join(attachment_names)
+    filenames = "\n".join(attachment_names) or "(нет вложений)"
     client = _get_client()
 
     try:
@@ -61,7 +61,14 @@ def process_text_with_ai(email_content, output_path, attachment_names=()):
         )
         response = client.generate(
             model=MODEL_NAME,
-            prompt=f"{preprocessing_prompt}\n\n{filenames}\n{email_content}",
+            prompt=(
+                f"{preprocessing_prompt}\n\n"
+                f"ИМЕНА ВЛОЖЕНИЙ:\n{filenames}\n\n"
+                "ТЕКСТ ПИСЬМА:\n"
+                "<<<BEGIN_EMAIL>>>\n"
+                f"{email_content}\n"
+                "<<<END_EMAIL>>>"
+            ),
             options={"temperature": 0.2, "thinking": False, "num_ctx": 40960},
         )
         preliminary_text = _response_text(response)
