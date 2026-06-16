@@ -33,12 +33,6 @@
   "ocr_confidence": 0.5,
   "ocr_dpi": 200,
   "ocr_heartbeat_seconds": 15,
-  "ocr_model_download_retries": 3,
-  "ocr_model_download_timeout": 600,
-  "ocr_model_download_retry_delay": 10,
-  "ollama_pull_retries": 3,
-  "ollama_pull_timeout": 600,
-  "ollama_pull_retry_delay": 10,
   "directum_rules_path": "src/scripts/directum_rules.json",
   "smtp_server": "smtp.example",
   "smtp_port": 587,
@@ -59,12 +53,6 @@ compute capability и версию cuDNN. `OCR_CUDA_DEVICE` выбирает и�
 совпадать по minor-версии. Драйвер NVIDIA должен поддерживать runtime,
 показанный в `torch.version.cuda`. Во время обработки каждой страницы OCR
 печатает heartbeat каждые `ocr_heartbeat_seconds`.
-
-Загрузка моделей OCR и Ollama защищена retry-настройками. Если загрузка зависла
-или оборвалась, приложение повторит попытку. Для OCR используются
-`ocr_model_download_retries`, `ocr_model_download_timeout` и
-`ocr_model_download_retry_delay`. Для Ollama используются
-`ollama_pull_retries`, `ollama_pull_timeout` и `ollama_pull_retry_delay`.
 
 Каждое письмо обрабатывается в отдельной папке внутри `src/scripts/jobs`.
 Письмо переносится в обработанную IMAP-папку только после успешного OCR,
