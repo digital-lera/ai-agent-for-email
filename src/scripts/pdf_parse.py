@@ -1,11 +1,15 @@
 import os
 import threading
 import time
+from pathlib import Path
 
 from pdf2image import convert_from_path
 import easyocr
 
 from src.backend.models import ProcessingError
+
+
+DEFAULT_OCR_MODEL_STORAGE_DIR = "/root/.EasyOCR/model"
 
 
 def pdf_parse(pdf_files, output_path, config=None):
@@ -18,11 +22,19 @@ def pdf_parse(pdf_files, output_path, config=None):
     confidence = float(config.get("ocr_confidence", 0.5))
     dpi = int(config.get("ocr_dpi", 200))
     heartbeat_seconds = int(config.get("ocr_heartbeat_seconds", 15))
+    model_storage_dir = str(
+        os.getenv(
+            "OCR_MODEL_STORAGE_DIR",
+            config.get("ocr_model_storage_dir", DEFAULT_OCR_MODEL_STORAGE_DIR),
+        )
+    )
+    Path(model_storage_dir).mkdir(parents=True, exist_ok=True)
 
     print(f"Начинаю парсинг {len(pdf_files)} PDF файлов", flush=True)
     print(
         "Настройки OCR: "
-        f"gpu={gpu}, workers={workers}, confidence={confidence}, dpi={dpi}",
+        f"gpu={gpu}, workers={workers}, confidence={confidence}, dpi={dpi}, "
+        f"model_storage_dir={model_storage_dir}",
         flush=True,
     )
     easyocr_device = _configure_cuda(gpu)
@@ -33,7 +45,12 @@ def pdf_parse(pdf_files, output_path, config=None):
             f"Инициализация EasyOCR Reader на устройстве {easyocr_device}...",
             flush=True,
         )
-        ocr = easyocr.Reader(["ru"], gpu=easyocr_device, verbose=True)
+        ocr = easyocr.Reader(
+            ["ru"],
+            gpu=easyocr_device,
+            model_storage_directory=model_storage_dir,
+            verbose=True,
+        )
         print(
             f"EasyOCR Reader инициализирован за {time.monotonic() - started:.1f} сек.",
             flush=True,

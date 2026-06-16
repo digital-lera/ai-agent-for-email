@@ -33,6 +33,7 @@
   "ocr_confidence": 0.5,
   "ocr_dpi": 200,
   "ocr_heartbeat_seconds": 15,
+  "ocr_model_storage_dir": "/root/.EasyOCR/model",
   "directum_rules_path": "src/scripts/directum_rules.json",
   "smtp_server": "smtp.example",
   "smtp_port": 587,
@@ -53,6 +54,10 @@ compute capability и версию cuDNN. `OCR_CUDA_DEVICE` выбирает и�
 совпадать по minor-версии. Драйвер NVIDIA должен поддерживать runtime,
 показанный в `torch.version.cuda`. Во время обработки каждой страницы OCR
 печатает heartbeat каждые `ocr_heartbeat_seconds`.
+
+Модели EasyOCR хранятся в `ocr_model_storage_dir`. В Docker Compose директория
+`/root/.EasyOCR` вынесена в named volume `easyocr`, поэтому detection и
+recognition модели не скачиваются заново после пересоздания контейнера.
 
 Каждое письмо обрабатывается в отдельной папке внутри `src/scripts/jobs`.
 Письмо переносится в обработанную IMAP-папку только после успешного OCR,

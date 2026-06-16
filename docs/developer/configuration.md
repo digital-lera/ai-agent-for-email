@@ -22,6 +22,7 @@
   "ocr_confidence": 0.5,
   "ocr_dpi": 200,
   "ocr_heartbeat_seconds": 15,
+  "ocr_model_storage_dir": "/root/.EasyOCR/model",
   "directum_rules_path": "src/scripts/directum_rules.json",
   "smtp_server": "smtp.example",
   "smtp_port": 587,
@@ -47,6 +48,8 @@ Directum могут быть разными пользователями.
 - `OLLAMA_HOST`: адрес Ollama. По умолчанию `http://localhost:11434`.
 - `OCR_GPU`: переопределяет `ocr_gpu`.
 - `OCR_CUDA_DEVICE`: индекс CUDA-устройства для OCR. По умолчанию `0`.
+- `OCR_MODEL_STORAGE_DIR`: директория кэша моделей EasyOCR. По умолчанию
+  `/root/.EasyOCR/model`.
 - `STATISTICS_TIMEZONE`: часовой пояс дневной статистики. По умолчанию
   `Europe/Moscow`.
 

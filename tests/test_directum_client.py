@@ -74,8 +74,8 @@ class DirectumClientTests(unittest.TestCase):
             {
                 "content": "Текст",
                 "correspondent": "",
-                "dateFrom": "",
-                "number": "",
+                "dateFrom": "16.06.2026",
+                "number": "123-4",
                 "signedBy": "",
                 "recipient": "",
             }

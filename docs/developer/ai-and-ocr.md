@@ -23,8 +23,16 @@ OCR реализован в `src/scripts/pdf_parse.py`.
 - `ocr_confidence`;
 - `ocr_dpi`;
 - `ocr_heartbeat_seconds`;
+- `ocr_model_storage_dir`;
 - `OCR_GPU`;
-- `OCR_CUDA_DEVICE`.
+- `OCR_CUDA_DEVICE`;
+- `OCR_MODEL_STORAGE_DIR`.
+
+EasyOCR скачивает detection и recognition модели при первой инициализации.
+Чтобы не скачивать их заново после перезапуска контейнера, приложение передает
+`model_storage_directory` в `easyocr.Reader()`. По умолчанию используется
+`/root/.EasyOCR/model`, а Docker Compose монтирует `/root/.EasyOCR` в named
+volume `easyocr`.
 
 ## Этап AI
 

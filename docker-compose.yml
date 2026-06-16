@@ -11,12 +11,14 @@ services:
       - OLLAMA_HOST=http://taif-mail-ollama:11434
       - OCR_GPU=true
       - OCR_CUDA_DEVICE=0
+      - OCR_MODEL_STORAGE_DIR=/root/.EasyOCR/model
       - STATISTICS_TIMEZONE=Europe/Moscow
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     restart: unless-stopped
     volumes:
       - .:/app
+      - easyocr:/root/.EasyOCR
     command: "python app.py"
     deploy:
       resources:
@@ -55,3 +57,4 @@ services:
 
 volumes:
   ollama:
+  easyocr:
