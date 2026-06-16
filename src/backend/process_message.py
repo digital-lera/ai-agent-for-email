@@ -55,6 +55,7 @@ def run_chain(socketio, context: MessageContext, config: dict) -> PipelineResult
         success=True,
         document_id=document_id,
         review_task_created=directum_result.review_task_created,
+        skipped_directum=directum_result.skipped_directum,
     )
 
 
@@ -109,4 +110,5 @@ def _create_document(state):
     state["directum_result"] = client.create_incoming_letter(
         state["extracted_data"],
         state["context"].pdf_attachments,
+        context=state["context"],
     )

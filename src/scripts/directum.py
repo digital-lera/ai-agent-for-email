@@ -9,7 +9,13 @@ import warnings
 
 import requests
 
-from src.backend.models import DirectumResult, ExtractedData, ProcessingError
+from src.backend.directum_rules import (
+    DirectumIds,
+    apply_id_rules,
+    forward_original_email,
+    load_directum_rules,
+)
+from src.backend.models import DirectumResult, ExtractedData, MessageContext, ProcessingError
 
 
 DEFAULT_TIMEOUT = 30
@@ -64,6 +70,8 @@ class DirectumClient:
     auth: tuple[str, str]
     performer_id: int
     timeout: int = DEFAULT_TIMEOUT
+    config: dict[str, Any] = field(default_factory=dict)
+    rules: list[dict[str, Any]] = field(default_factory=list)
     session: requests.Session = field(default_factory=requests.Session)
     errors: list[str] = field(default_factory=list)
 
@@ -80,6 +88,8 @@ class DirectumClient:
                 auth=(str(config["username"]), str(config["password"])),
                 performer_id=int(config["performer_id"]),
                 timeout=int(config.get("request_timeout", DEFAULT_TIMEOUT)),
+                config=config,
+                rules=load_directum_rules(config),
             )
         except (KeyError, TypeError, ValueError) as exc:
             raise ProcessingError(f"Invalid Directum configuration: {exc}") from exc
@@ -199,11 +209,55 @@ class DirectumClient:
         self,
         data: ExtractedData,
         attachments: list[Path],
+        context: MessageContext | None = None,
     ) -> DirectumResult:
         print("Поиск связанных сущностей Directum...", flush=True)
         signed_by_id = self._lookup("IContacts", data.signed_by, is_person=True)
         recipient_id = self._lookup("IEmployees", data.recipient, is_person=True)
         counterparty_id = self._lookup("ICounterparties", data.correspondent)
+        ids = DirectumIds(
+            signed_by_id=signed_by_id,
+            recipient_id=recipient_id,
+            counterparty_id=counterparty_id,
+        )
+        decision = apply_id_rules(self.rules, ids)
+        if decision.matched_rules:
+            print(
+                "Правила Directum применены: "
+                f"{', '.join(decision.matched_rules)}",
+                flush=True,
+            )
+        ids = decision.apply_to_ids(ids)
+        signed_by_id = ids.signed_by_id
+        recipient_id = ids.recipient_id
+        counterparty_id = ids.counterparty_id
+
+        if decision.forward_to:
+            if context is None:
+                raise ProcessingError("Forwarding rule matched without message context")
+            forward_original_email(
+                original_message=context.raw_message,
+                original_subject=context.subject,
+                sender=context.sender,
+                recipients=decision.forward_to,
+                config=self.config,
+            )
+            print(
+                f"Письмо перенаправлено по правилу: {', '.join(decision.forward_to)}",
+                flush=True,
+            )
+
+        if decision.skip_directum:
+            print(
+                "Создание документа Directum пропущено по правилу: "
+                f"{decision.reason}",
+                flush=True,
+            )
+            return DirectumResult(
+                document_id=None,
+                review_task_created=False,
+                skipped_directum=True,
+            )
 
         if data.signed_by and signed_by_id < 1:
             self.errors.append(

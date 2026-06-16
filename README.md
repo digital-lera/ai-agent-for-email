@@ -23,7 +23,11 @@ contain:
   "ocr_workers": 0,
   "ocr_confidence": 0.5,
   "ocr_dpi": 200,
-  "ocr_heartbeat_seconds": 15
+  "ocr_heartbeat_seconds": 15,
+  "directum_rules_path": "src/scripts/directum_rules.json",
+  "smtp_server": "smtp.example",
+  "smtp_port": 587,
+  "smtp_use_tls": true
 }
 ```
 
@@ -45,6 +49,67 @@ Each email is processed in an isolated directory under `src/scripts/jobs`.
 The message is moved to the processed IMAP folder only after OCR, AI
 validation, Directum document creation, and all attachment uploads succeed.
 Failed messages are flagged for manual processing and produce a Directum task.
+
+## Directum processing rules
+
+Rules that change or bypass Directum processing live in
+`src/scripts/directum_rules.json`. The file is regular JSON and can be edited
+without changing Python code.
+
+Each rule has:
+
+- `name`: human-readable label for logs.
+- `enabled`: set to `false` to temporarily disable a rule.
+- `when`: the condition.
+- `actions`: one or more actions to apply when the condition matches.
+
+Supported conditions:
+
+- `sender_email`: exact sender email match, case-insensitive.
+- `sender_contains`: text contained in the full `From` header.
+- `text_contains_any`: fuzzy match against the subject and email body.
+- `attachment_name_contains_any`: fuzzy match against attachment names without
+  extensions.
+- `signed_by_id`: Directum contact ID after lookup.
+- `recipient_id`: Directum employee ID after lookup.
+- `counterparty_id`: Directum counterparty ID after lookup.
+- `any_id`: matches signed-by, recipient, or counterparty ID.
+
+Supported actions:
+
+- `skip_directum`: do not create an incoming letter in Directum. For email-level
+  rules, this also stops AI/OCR processing.
+- `replace_matched_id`: replace whichever ID matched the condition.
+- `set_signed_by_id`: force a specific `SignedBy` ID.
+- `set_recipient_id`: force a specific `Addressee` ID.
+- `set_counterparty_id`: force a specific correspondent ID.
+- `forward_email`: send the original email as an `.eml` attachment.
+
+Example:
+
+```json
+{
+  "name": "Forward letters for recipient 608",
+  "enabled": true,
+  "when": {
+    "recipient_id": 608
+  },
+  "actions": [
+    {
+      "type": "forward_email",
+      "to": "StryginaVM@taif.ru"
+    },
+    {
+      "type": "skip_directum",
+      "reason": "Recipient 608 is handled by email forwarding"
+    }
+  ]
+}
+```
+
+Forwarding rules require SMTP settings in `login.json`. By default the service
+uses `username` and `email-password` for SMTP login; override them with
+`smtp_username`, `smtp_password`, or `forward_from` if needed.
 
 Daily processing statistics are stored in `src/data/statistics.sqlite3` using
 the `Europe/Moscow` calendar date. The timezone can be changed with the

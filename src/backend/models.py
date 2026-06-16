@@ -29,6 +29,7 @@ class MessageContext:
     sender: str
     message_id: str
     root_dir: Path
+    raw_message: bytes = b""
     raw_text: str = ""
     job_id: str = field(default_factory=lambda: uuid.uuid4().hex)
     attachments: list[Path] = field(default_factory=list)
@@ -75,15 +76,8 @@ class ExtractedData:
             "signedBy",
             "recipient",
         }
-        missing = required - value.keys()
-        if missing:
-            raise ValidationError(
-                f"AI output is missing fields: {', '.join(sorted(missing))}"
-            )
 
         fields = {key: value[key] for key in required}
-        if not all(isinstance(item, str) for item in fields.values()):
-            raise ValidationError("Every AI output field must be a string")
 
         content = fields["content"].strip()
         correspondent = fields["correspondent"].strip()
@@ -93,23 +87,14 @@ class ExtractedData:
         recipient = fields["recipient"].strip()
 
         if not content:
-            raise ValidationError("AI output field 'content' is empty")
+            raise ValidationError("Агент не смог выделить краткое содержание письма")
         if date_from:
             try:
                 datetime.strptime(date_from, DATE_FORMAT)
             except ValueError as exc:
                 raise ValidationError(
-                    "AI output field 'dateFrom' must use DD.MM.YYYY"
+                    f"Дата письма должна быть в формате DD.MM.YYYY: {date_from}"
                 ) from exc
-        if not NUMBER_PATTERN.fullmatch(number):
-            raise ValidationError(
-                "AI output field 'number' may contain only digits and hyphens"
-            )
-        for field_name, person in (("signedBy", signed_by), ("recipient", recipient)):
-            if person and not PERSON_PATTERN.fullmatch(person):
-                raise ValidationError(
-                    f"AI output field '{field_name}' must use 'Surname I'"
-                )
 
         return cls(
             content=content,
@@ -148,9 +133,11 @@ class PipelineResult:
     document_id: int | None = None
     review_task_created: bool = False
     error: str | None = None
+    skipped_directum: bool = False
 
 
 @dataclass(frozen=True)
 class DirectumResult:
-    document_id: int
+    document_id: int | None
     review_task_created: bool
+    skipped_directum: bool = False

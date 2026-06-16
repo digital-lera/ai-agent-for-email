@@ -1,5 +1,6 @@
 import tempfile
 import unittest
+import json
 from email.message import EmailMessage
 from pathlib import Path
 from unittest.mock import patch
@@ -38,6 +39,21 @@ def pdf_email():
         maintype="application",
         subtype="pdf",
         filename="letter.pdf",
+    )
+    return message.as_bytes()
+
+
+def resume_email():
+    message = EmailMessage()
+    message["Subject"] = "Отклик на вакансию"
+    message["From"] = "candidate@example.com"
+    message["Message-ID"] = "<resume-test@example.com>"
+    message.set_content("Добрый день, направляю CV.")
+    message.add_attachment(
+        b"resume",
+        maintype="application",
+        subtype="octet-stream",
+        filename="резюме.docx",
     )
     return message.as_bytes()
 
@@ -113,6 +129,67 @@ class StatisticsLifecycleTests(unittest.TestCase):
             error_task_error=RuntimeError("Directum unavailable"),
         )
         self.assertEqual(counters, ["received"])
+
+    def test_resume_rule_forwards_and_skips_pipeline(self):
+        counters = []
+        socket = FakeSocket()
+        imap = FakeImap(resume_email())
+
+        def record_counter(socketio, counter, message_id):
+            counters.append((counter, message_id))
+
+        with tempfile.TemporaryDirectory() as directory:
+            rules_path = Path(directory) / "rules.json"
+            rules_path.write_text(
+                json.dumps(
+                    {
+                        "rules": [
+                            {
+                                "name": "forward resume",
+                                "when": {
+                                    "attachment_name_contains_any": ["резюме", "CV"]
+                                },
+                                "actions": [
+                                    {
+                                        "type": "forward_email",
+                                        "to": "MikhelAA@taif.ru",
+                                    },
+                                    {
+                                        "type": "skip_directum",
+                                        "reason": "resume",
+                                    },
+                                ],
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with (
+                patch("src.backend.email_check.JOBS_DIR", Path(directory)),
+                patch("src.backend.process_message.run_chain") as run_chain,
+                patch(
+                    "src.backend.email_check.forward_original_email",
+                ) as forward_original_email,
+                patch(
+                    "src.backend.email_check.increment_and_emit",
+                    side_effect=record_counter,
+                ),
+                patch("src.backend.email_check._move_to_processed"),
+            ):
+                _process_one_message(
+                    imap,
+                    b"1",
+                    socket,
+                    {
+                        "max_attachment_bytes": 1024,
+                        "directum_rules_path": str(rules_path),
+                    },
+                )
+
+        run_chain.assert_not_called()
+        forward_original_email.assert_called_once()
+        self.assertEqual([counter for counter, _ in counters], ["received", "successful"])
 
 
 if __name__ == "__main__":

@@ -9,6 +9,11 @@ from email.message import Message
 from pathlib import Path
 from typing import Any
 
+from src.backend.directum_rules import (
+    apply_email_rules,
+    forward_original_email,
+    load_directum_rules,
+)
 from src.backend.models import MessageContext, ProcessingError
 from src.backend.statistics import emit_statistics, increment_and_emit
 from src.scripts.send_error_task import create_error_task
@@ -145,6 +150,7 @@ def _process_one_message(
         sender=sender,
         message_id=message.get("message-id", message_number.decode()),
         root_dir=JOBS_DIR,
+        raw_message=msg_data[0][1],
         raw_text=read_email_text(message),
     )
     context.prepare()
@@ -158,25 +164,63 @@ def _process_one_message(
     socketio.emit("new_email", {"subject": subject, "sender": sender})
     statistics_tracked = False
     try:
-        _save_attachments(message, context, socketio, config)
-        if not context.pdf_attachments:
+        rules = load_directum_rules(config)
+        email_decision = apply_email_rules(
+            rules,
+            sender=sender,
+            subject=subject,
+            body=context.raw_text,
+            attachment_names=_message_attachment_names(message),
+        )
+        if email_decision.forward_to:
+            forward_original_email(
+                original_message=context.raw_message,
+                original_subject=context.subject,
+                sender=context.sender,
+                recipients=email_decision.forward_to,
+                config=config,
+            )
+        if email_decision.skip_directum:
+            if email_decision.forward_to:
+                print(
+                    "Письмо перенаправлено по правилу: "
+                    f"{', '.join(email_decision.forward_to)}",
+                    flush=True,
+                )
             print(
-                "PDF-вложения не найдены. Письмо не передается в pipeline.",
+                "Письмо не передается в AI/Directum по правилу: "
+                f"{email_decision.reason}",
                 flush=True,
             )
-            _mark_for_manual_processing(imap, message_number)
-            return
+            increment_and_emit(socketio, "received", context.message_id)
+            increment_and_emit(socketio, "successful", context.message_id)
+            statistics_tracked = True
+        else:
+            if email_decision.forward_to:
+                print(
+                    "Письмо перенаправлено по правилу: "
+                    f"{', '.join(email_decision.forward_to)}",
+                    flush=True,
+                )
+            _save_attachments(message, context, socketio, config)
+            if not context.pdf_attachments:
+                print(
+                    "PDF-вложения не найдены. Письмо не передается в pipeline.",
+                    flush=True,
+                )
+                _mark_for_manual_processing(imap, message_number)
+                return
 
-        increment_and_emit(socketio, "received", context.message_id)
-        statistics_tracked = True
-        from src.backend.process_message import run_chain
+            increment_and_emit(socketio, "received", context.message_id)
+            statistics_tracked = True
+            from src.backend.process_message import run_chain
 
-        result = run_chain(socketio, context, config)
-        if not result.success:
-            raise ProcessingError(result.error or "Processing pipeline failed")
-        if statistics_tracked:
-            outcome = "partial" if result.review_task_created else "successful"
-            increment_and_emit(socketio, outcome, context.message_id)
+            result = run_chain(socketio, context, config)
+            if not result.success:
+                raise ProcessingError(result.error or "Processing pipeline failed")
+            if statistics_tracked:
+                outcome = "partial" if result.review_task_created else "successful"
+                increment_and_emit(socketio, outcome, context.message_id)
     except Exception as exc:
         print(f"Письмо обработать не удалось: {exc}", flush=True)
         socketio.emit("error", {"message": str(exc)})
@@ -261,6 +305,14 @@ def _save_attachments(
         f"Всего вложений: {len(context.attachments)}, "
         f"PDF: {len(context.pdf_attachments)}",
         flush=True,
+    )
+
+
+def _message_attachment_names(message: Message) -> tuple[str, ...]:
+    return tuple(
+        decode_filename(file_name)
+        for part in message.walk()
+        if (file_name := part.get_filename())
     )
 
 
