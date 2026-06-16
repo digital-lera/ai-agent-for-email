@@ -33,40 +33,21 @@
           <section class="board monitoring">
               <h3 class="board__header">
                   Мониторинг почтового ящика
-                  <!--test change-->
               </h3>
               <div class="board__container">
                   <div id="status">
-                      <p class="monitoring-status">Новых писем нет.</p>
-                      <p id="filename"></p>
+                      <p class="monitoring-status" id="monitoring-empty">Новых писем нет.</p>
+                      <div class="monitoring-email" id="monitoring-email" hidden>
+                          <p class="monitoring-email__field">
+                              <span class="monitoring-email__label">Отправитель:</span>
+                              <span id="monitoring-sender">-</span>
+                          </p>
+                          <p class="monitoring-email__field">
+                              <span class="monitoring-email__label">Тема:</span>
+                              <span id="monitoring-subject">-</span>
+                          </p>
+                      </div>
                   </div>
-              </div>
-          </section>
-          <section class="board refinement-steps">
-              <h3 class="board__header">
-                  Этапы обработки
-              </h3>
-              <div class="board__container">
-                  <ol class="steps-list">
-                      <li class="steps-list__element out-of-service" id="textParseStatus">
-                            <span class="steps-list__element__status-icon">
-                                <img class="steps-list__element__number-icon" src="{{ url_for('static', filename='styles/images/one_icon.svg')}}"/>
-                            </span>
-                            <p class="steps-list__element__step-name">Обработка текста письма с OCR</p>
-                      </li>
-                      <li class="steps-list__element out-of-service" id="aiRecognitionStatus">
-                            <span class="steps-list__element__status-icon">
-                                <img class="steps-list__element__number-icon" src="{{ url_for('static', filename='styles/images/two_icon.svg')}}"/>
-                            </span>
-                            <p class="steps-list__element__step-name">Выделение необходимых данных из текста</p>
-                      </li>
-                      <li class="steps-list__element out-of-service" id="directumAPIStatus">
-                            <span class="steps-list__element__status-icon">
-                                <img class="steps-list__element__number-icon" src="{{ url_for('static', filename='styles/images/three_icon.svg')}}"/>
-                            </span>
-                            <p class="steps-list__element__step-name">Создание входящего письма в Directum RX</p>
-                      </li>
-                  </ol>
               </div>
           </section>
           <section class="board obtained-data">
@@ -130,32 +111,6 @@
       </div>
 
       <div class="dashboard__dev-info">
-          <section class="board connection-status">
-              <h3 class="board__header">
-                  Статус подключений
-              </h3>
-              <div class="board__container">
-                  <ul class="connection-status__list">
-                      <li class="connection-status__list__element">
-                          <p class="connection-status__list__element__server-name">
-                              Почтовый сервер Outlook:
-                          </p>
-                          <p class="connection-status__list__element__status">
-                              Нет данных
-                          </p>
-                      </li>
-                      <li class="connection-status__list__element">
-                          <p class="connection-status__list__element__server-name">
-                              Сервер DirectumRX:
-                          </p>
-                          <p class="connection-status__list__element__status">
-                              Нет данных
-                          </p>
-                      </li>
-                  </ul>
-              </div>
-          </section>
-          
           <section class="board statistics">
             <h3 class="board__header">
                   Статистика обработки
@@ -164,40 +119,30 @@
                 <ul class="statistics__list">
                     <li class="statistics__list__element">
                         <p class="statistics__list__element__field-name">
-                            Писем, включающих PDF, пришло за день:
+                            Писем, включающих PDF, пришло за день (с 00:00):
                         </p>
-                        <p class="statistics__list__element__number" id="statistics-received">0</p>
+                        <p class="statistics__list__element__number statistics__list__element__number--received" id="statistics-received">0</p>
                     </li>
                     <li class="statistics__list__element">
                         <p class="statistics__list__element__field-name">
                             Успешно обработано ИИ-агентом:
                         </p>
-                        <p class="statistics__list__element__number" id="statistics-successful">0</p>
+                        <p class="statistics__list__element__number statistics__list__element__number--successful" id="statistics-successful">0</p>
                     </li>
                     <li class="statistics__list__element">
                         <p class="statistics__list__element__field-name">
                             Частично обработано ИИ-агентом:
                         </p>
-                        <p class="statistics__list__element__number" id="statistics-partial">0</p>
+                        <p class="statistics__list__element__number statistics__list__element__number--partial" id="statistics-partial">0</p>
                     </li>
                     <li class="statistics__list__element">
                         <p class="statistics__list__element__field-name">
                             Передано на ручную обработку:
                         </p>
-                        <p class="statistics__list__element__number" id="statistics-manual">0</p>
+                        <p class="statistics__list__element__number statistics__list__element__number--manual" id="statistics-manual">0</p>
                     </li>
                 </ul>
             </div>
-          </section>
-          <section class="board log-console">
-              <h3 class="board__header">
-                  Вывод консоли
-              </h3>
-              <div class="board__container">
-                  <div id="chain">
-                      <div id="chainStages"></div>
-                  </div>
-              </div>
           </section>
           <a class="contact-button"
             href="mailto:StryginaVM@uktaif.ru">
@@ -220,16 +165,6 @@
           transports: ["websocket", "polling"]
           });
 
-          socket.on("connect", () => {
-              console.log("connected");
-          });
-
-          const progressStages = {
-              text_parse: "textParseStatus",
-              ai_data_recognition: "aiRecognitionStatus",
-              directum_api: "directumAPIStatus",
-          };
-
           const dataFields = {
               content: "#short-content .obtained-data__list__element__content",
               correspondent: "#contragent .obtained-data__list__element__content",
@@ -238,15 +173,6 @@
               dateFrom: "#date .obtained-data__list__element__content",
               number: "#number .obtained-data__list__element__content",
           };
-
-          function setStageState(stageKey, state) {
-              const element = document.getElementById(progressStages[stageKey]);
-              if (!element) {
-                  return;
-              }
-              element.classList.remove("out-of-service", "in-process", "completed", "error");
-              element.classList.add(state || "out-of-service");
-          }
 
           function setExtractedData(data = {}) {
               Object.entries(dataFields).forEach(([key, selector]) => {
@@ -257,42 +183,49 @@
               });
           }
 
-          function setChain(chain = {}) {
-              const container = document.getElementById("chainStages");
-              if (!chain.stage && !chain.status && !chain.log) {
-                  container.replaceChildren();
-                  return;
-              }
-              const summary = document.createElement("p");
-              const stage = document.createElement("strong");
-              const log = document.createElement("pre");
+          function setMonitoringEmail(sender = "", subject = "") {
+              const status = document.getElementById("status");
+              const empty = document.getElementById("monitoring-empty");
+              const email = document.getElementById("monitoring-email");
 
-              stage.textContent = chain.stage || "";
-              summary.append(stage, document.createTextNode(
-                chain.status ? `: ${chain.status}` : ""
-              ));
-              log.textContent = chain.log || "";
-              container.replaceChildren(summary, log);
+              document.getElementById("monitoring-sender").textContent = sender || "-";
+              document.getElementById("monitoring-subject").textContent = subject || "-";
+              empty.hidden = true;
+              email.hidden = false;
+              status.classList.remove("error");
+          }
+
+          function setMonitoringIdle() {
+              const status = document.getElementById("status");
+              const empty = document.getElementById("monitoring-empty");
+              const email = document.getElementById("monitoring-email");
+
+              empty.textContent = "Новых писем нет.";
+              empty.hidden = false;
+              email.hidden = true;
+              status.classList.remove("error");
+          }
+
+          function setMonitoringError(message = "") {
+              const status = document.getElementById("status");
+              const empty = document.getElementById("monitoring-empty");
+              const email = document.getElementById("monitoring-email");
+
+              empty.textContent = message || "Ошибка обработки письма.";
+              empty.hidden = false;
+              email.hidden = true;
+              status.classList.add("error");
           }
 
           function renderProgress(snapshot = {}) {
-              const status = document.getElementById("status");
-              const filename = document.getElementById("filename");
-
-              status.textContent = snapshot.message || "Новых писем нет.";
-              status.classList.toggle("error", snapshot.status === "error");
-              filename.textContent = snapshot.filename
-                ? `Вложенный файл: ${snapshot.filename}`
-                : "";
-
-              Object.entries(progressStages).forEach(([stageKey]) => {
-                  setStageState(
-                    stageKey,
-                    snapshot.stages?.[stageKey] || "out-of-service"
-                  );
-              });
+              if (snapshot.status === "running") {
+                  setMonitoringEmail(snapshot.sender, snapshot.subject);
+              } else if (snapshot.status === "error") {
+                  setMonitoringError(snapshot.chain?.log || snapshot.message);
+              } else {
+                  setMonitoringIdle();
+              }
               setExtractedData(snapshot.data || {});
-              setChain(snapshot.chain || {});
           }
 
           socket.on("statistics_update", data => {
@@ -310,55 +243,15 @@
           socket.on("progress_update", renderProgress);
           
           socket.on('new_email', data => {
-              document.getElementById('status').textContent =
-                `Получено новое письмо!\nТема: ${data.subject}\nОтправитель: ${data.sender}`;
-              document.getElementById('filename').textContent = "";
-              document.getElementById('status').classList.remove('error');
-          });
-
-          socket.on('text_parse_started', data => {
-              setStageState("text_parse", "in-process");
-          });
-
-          socket.on('text_parse_finished', data => {
-              setStageState("text_parse", "completed");
-          });
-
-          socket.on('ai_data_recognition_started', data => {
-              setStageState("ai_data_recognition", "in-process");
-          });
-
-          socket.on('ai_data_recognition_finished', data => {
-              setStageState("ai_data_recognition", "completed");
-          });
-
-          socket.on('directum_api_started', data => {
-              setStageState("directum_api", "in-process");
-          });
-
-          socket.on('directum_api_finished', data => {
-              setStageState("directum_api", "completed");
-              document.getElementById('status').textContent = "Обработка завершена";
-        
-          });
-
-          socket.on('filename_recognized', data => {
-              document.getElementById('filename').textContent = `Вложенный файл: ${data}`;
-          });
-
-          socket.on('chain_update', data => {
-              setChain(data);
+              setMonitoringEmail(data.sender, data.subject);
           });
 
           socket.on('json_data_received', function(data) {
-            console.log("Получен JSON:", data);
             setExtractedData(data);
           });
 
           socket.on('error', data => {
-              document.getElementById('status').textContent =
-                "Ошибка! Дополнительную информацию можно найти в консоли или логах";
-              document.getElementById('status').classList.add('error');
+              setMonitoringError(data?.message);
           });
 
           socket.on('reset', data => {

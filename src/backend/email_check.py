@@ -82,7 +82,6 @@ def check_email(socketio) -> int:
     """Poll the inbox once and return the number of messages inspected."""
     print("\nПроверка почты...", flush=True)
     config = load_config()
-    print(f"Конфигурация загружена из {LOGIN_PATH}", flush=True)
     emit_statistics(socketio)
     imap = None
     try:
@@ -118,14 +117,11 @@ def _connect(config: dict[str, Any]):
         raise ProcessingError(f"Missing email configuration field: {exc}") from exc
 
     server = str(config.get("imap_server", DEFAULT_IMAP_SERVER))
-    print(f"Подключение к IMAP-серверу {server}...", flush=True)
     imap = imaplib.IMAP4_SSL(server)
     status, response = imap.login(username, password)
     _require_ok(status, "login", response)
-    print(f"IMAP-авторизация выполнена для {username}.", flush=True)
     status, response = imap.select("INBOX")
     _require_ok(status, "select inbox", response)
-    print("Папка INBOX выбрана.", flush=True)
     return imap
 
 
