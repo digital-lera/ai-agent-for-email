@@ -49,20 +49,22 @@
               <div class="board__container">
                   <ol class="steps-list">
                       <li class="steps-list__element out-of-service" id="textParseStatus">
-                            <img class="steps-list__element__icon" src="{{ url_for('static', filename='styles/images/one_icon.svg')}}"/>
-
+                            <span class="steps-list__element__status-icon">
+                                <img class="steps-list__element__number-icon" src="{{ url_for('static', filename='styles/images/one_icon.svg')}}"/>
+                            </span>
                             <p class="steps-list__element__step-name">Обработка текста письма с OCR</p>
-                            <div class="steps-list__element__progress-bar"></div>
                       </li>
                       <li class="steps-list__element out-of-service" id="aiRecognitionStatus">
-                            <img class="step-icon" src="{{ url_for('static', filename='styles/images/two_icon.svg')}}"/>
+                            <span class="steps-list__element__status-icon">
+                                <img class="steps-list__element__number-icon" src="{{ url_for('static', filename='styles/images/two_icon.svg')}}"/>
+                            </span>
                             <p class="steps-list__element__step-name">Выделение необходимых данных из текста</p>
-                            <div class="steps-list__element__progress-bar"></div>
                       </li>
                       <li class="steps-list__element out-of-service" id="directumAPIStatus">
-                            <img class="step-icon" src="{{ url_for('static', filename='styles/images/three_icon.svg')}}"/>
+                            <span class="steps-list__element__status-icon">
+                                <img class="steps-list__element__number-icon" src="{{ url_for('static', filename='styles/images/three_icon.svg')}}"/>
+                            </span>
                             <p class="steps-list__element__step-name">Создание входящего письма в Directum RX</p>
-                            <div class="steps-list__element__progress-bar"></div>
                       </li>
                   </ol>
               </div>
@@ -250,13 +252,17 @@
               Object.entries(dataFields).forEach(([key, selector]) => {
                   const element = document.querySelector(selector);
                   if (element) {
-                      element.innerText = data[key] || "";
+                      element.innerText = data[key] || "-";
                   }
               });
           }
 
           function setChain(chain = {}) {
               const container = document.getElementById("chainStages");
+              if (!chain.stage && !chain.status && !chain.log) {
+                  container.replaceChildren();
+                  return;
+              }
               const summary = document.createElement("p");
               const stage = document.createElement("strong");
               const log = document.createElement("pre");
@@ -311,34 +317,27 @@
           });
 
           socket.on('text_parse_started', data => {
-            document.getElementById('textParseStatus').classList.remove('out-of-service');
-              document.getElementById('textParseStatus').classList.add('in-process');
+              setStageState("text_parse", "in-process");
           });
 
           socket.on('text_parse_finished', data => {
-              document.getElementById('textParseStatus').classList.add('completed');
-              document.getElementById('textParseStatus').classList.remove('in-process');
-
+              setStageState("text_parse", "completed");
           });
 
           socket.on('ai_data_recognition_started', data => {
-              document.getElementById('aiRecognitionStatus').classList.remove('out-of-service');
-              document.getElementById('aiRecognitionStatus').classList.add('in-process');
+              setStageState("ai_data_recognition", "in-process");
           });
 
           socket.on('ai_data_recognition_finished', data => {
-              document.getElementById('aiRecognitionStatus').classList.add('completed');
-              document.getElementById('aiRecognitionStatus').classList.remove('in-process');
+              setStageState("ai_data_recognition", "completed");
           });
 
           socket.on('directum_api_started', data => {
-              document.getElementById('directumAPIStatus').classList.add('in-process');
-              document.getElementById('directumAPIStatus').classList.remove('out-of-service');
+              setStageState("directum_api", "in-process");
           });
 
           socket.on('directum_api_finished', data => {
-              document.getElementById('directumAPIStatus').classList.remove('in-process');
-              document.getElementById('directumAPIStatus').classList.add('completed');   
+              setStageState("directum_api", "completed");
               document.getElementById('status').textContent = "Обработка завершена";
         
           });
@@ -353,16 +352,8 @@
 
           socket.on('json_data_received', function(data) {
             console.log("Получен JSON:", data);
-            
-            // Обновляем HTML
-            document.querySelector('#short-content .obtained-data__list__element__content').innerText = data.content;
-            document.querySelector('#contragent .obtained-data__list__element__content').innerText = data.correspondent;
-            document.querySelector('#signed-by .obtained-data__list__element__content').innerText = data.signedBy;
-            document.querySelector('#recipient .obtained-data__list__element__content').innerText = data.recipient
-            document.querySelector('#date .obtained-data__list__element__content').innerText = data.dateFrom;
-            document.querySelector('#number .obtained-data__list__element__content').innerText = data.number;
-
-            });
+            setExtractedData(data);
+          });
 
           socket.on('error', data => {
               document.getElementById('status').textContent =
