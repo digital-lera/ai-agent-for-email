@@ -50,6 +50,33 @@
                   </div>
               </div>
           </section>
+          <section class="board refinement-steps">
+              <h3 class="board__header">
+                  Этапы обработки
+              </h3>
+              <div class="board__container">
+                  <ol class="steps-list">
+                      <li class="steps-list__element out-of-service" id="textParseStatus">
+                            <span class="steps-list__element__status-icon">
+                                <img class="steps-list__element__number-icon" src="{{ url_for('static', filename='styles/images/one_icon.svg')}}"/>
+                            </span>
+                            <p class="steps-list__element__step-name">Обработка текста письма с OCR</p>
+                      </li>
+                      <li class="steps-list__element out-of-service" id="aiRecognitionStatus">
+                            <span class="steps-list__element__status-icon">
+                                <img class="steps-list__element__number-icon" src="{{ url_for('static', filename='styles/images/two_icon.svg')}}"/>
+                            </span>
+                            <p class="steps-list__element__step-name">Выделение необходимых данных из текста</p>
+                      </li>
+                      <li class="steps-list__element out-of-service" id="directumAPIStatus">
+                            <span class="steps-list__element__status-icon">
+                                <img class="steps-list__element__number-icon" src="{{ url_for('static', filename='styles/images/three_icon.svg')}}"/>
+                            </span>
+                            <p class="steps-list__element__step-name">Создание входящего письма в Directum RX</p>
+                      </li>
+                  </ol>
+              </div>
+          </section>
           <section class="board obtained-data">
               <h3 class="board__header">
                   Полученные данные
@@ -165,6 +192,12 @@
           transports: ["websocket", "polling"]
           });
 
+          const progressStages = {
+              text_parse: "textParseStatus",
+              ai_data_recognition: "aiRecognitionStatus",
+              directum_api: "directumAPIStatus",
+          };
+
           const dataFields = {
               content: "#short-content .obtained-data__list__element__content",
               correspondent: "#contragent .obtained-data__list__element__content",
@@ -180,6 +213,21 @@
                   if (element) {
                       element.innerText = data[key] || "-";
                   }
+              });
+          }
+
+          function setStageState(stageKey, state) {
+              const element = document.getElementById(progressStages[stageKey]);
+              if (!element) {
+                  return;
+              }
+              element.classList.remove("out-of-service", "in-process", "completed", "error");
+              element.classList.add(state || "out-of-service");
+          }
+
+          function setProgressStages(stages = {}) {
+              Object.entries(progressStages).forEach(([stageKey]) => {
+                  setStageState(stageKey, stages[stageKey] || "out-of-service");
               });
           }
 
@@ -225,6 +273,7 @@
               } else {
                   setMonitoringIdle();
               }
+              setProgressStages(snapshot.stages || {});
               setExtractedData(snapshot.data || {});
           }
 
@@ -244,6 +293,30 @@
           
           socket.on('new_email', data => {
               setMonitoringEmail(data.sender, data.subject);
+          });
+
+          socket.on('text_parse_started', data => {
+              setStageState("text_parse", "in-process");
+          });
+
+          socket.on('text_parse_finished', data => {
+              setStageState("text_parse", "completed");
+          });
+
+          socket.on('ai_data_recognition_started', data => {
+              setStageState("ai_data_recognition", "in-process");
+          });
+
+          socket.on('ai_data_recognition_finished', data => {
+              setStageState("ai_data_recognition", "completed");
+          });
+
+          socket.on('directum_api_started', data => {
+              setStageState("directum_api", "in-process");
+          });
+
+          socket.on('directum_api_finished', data => {
+              setStageState("directum_api", "completed");
           });
 
           socket.on('json_data_received', function(data) {
