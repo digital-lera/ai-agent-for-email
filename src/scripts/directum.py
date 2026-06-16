@@ -274,6 +274,11 @@ class DirectumClient:
                 f"Контрагент '{data.correspondent}' не найден."
             )
 
+        if data.number == "":
+            self.errors.append("Номер письма не распознан.")
+        if data.date_from == "":
+            self.errors.append("Дата письма не распознана.")
+
         payload: dict[str, Any] = {
             "Name": data.content,
             "Subject": data.content,
