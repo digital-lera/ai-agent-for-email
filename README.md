@@ -10,8 +10,9 @@ contain:
 
 ```json
 {
-  "username": "service-account",
+  "username": "email-service-account",
   "email-password": "mail-password",
+  "directum-username": "directum-service-account",
   "password": "directum-password",
   "odataurl": "https://directum.example/odata",
   "performer_id": 123,

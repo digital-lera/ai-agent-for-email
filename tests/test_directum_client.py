@@ -36,6 +36,21 @@ class FakeSession:
 
 
 class DirectumClientTests(unittest.TestCase):
+    def test_from_config_uses_directum_username(self):
+        client = DirectumClient.from_config(
+            {
+                "username": "email-user",
+                "directum-username": "directum-user",
+                "password": "directum-password",
+                "odataurl": "https://directum.example",
+                "performer_id": 1,
+                "directum_rules_path": "/tmp/missing-directum-rules.json",
+            }
+        )
+
+        self.assertEqual(client.auth, ("directum-user", "directum-password"))
+        self.assertEqual(client.session.auth, ("directum-user", "directum-password"))
+
     def test_fuzzy_person_lookup_returns_original_item_id(self):
         item_id = find_fuzzy_id(
             [

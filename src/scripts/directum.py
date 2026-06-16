@@ -85,7 +85,7 @@ class DirectumClient:
         try:
             return cls(
                 base_url=str(config["odataurl"]),
-                auth=(str(config["username"]), str(config["password"])),
+                auth=(str(config["directum-username"]), str(config["password"])),
                 performer_id=int(config["performer_id"]),
                 timeout=int(config.get("request_timeout", DEFAULT_TIMEOUT)),
                 config=config,
