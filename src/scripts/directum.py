@@ -19,6 +19,10 @@ from src.backend.models import DirectumResult, ExtractedData, MessageContext, Pr
 
 
 DEFAULT_TIMEOUT = 30
+SUCCESS_TASK_TEXT = (
+    "Письмо было обработано успешно, все поля внесены в карточку ИИ-агентом. "
+    "Пожалуйста, направьте готовое письмо по маршруту"
+)
 warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
 
@@ -317,6 +321,13 @@ class DirectumClient:
                 flush=True,
             )
             self._create_review_task(document_id)
+        else:
+            print(
+                "Письмо обработано без ошибок. Создается задача на отправку "
+                "готового письма по маршруту.",
+                flush=True,
+            )
+            self._create_success_task(document_id)
         print(f"Работа с Directum завершена, document_id={document_id}", flush=True)
         return DirectumResult(
             document_id=document_id,
@@ -390,5 +401,26 @@ class DirectumClient:
         )
         print(
             f"Задача проверки создана и отправлена, id={task_id}.",
+            flush=True,
+        )
+
+    def _create_success_task(self, document_id: int) -> None:
+        print(f"Создание задачи успешной обработки для документа {document_id}.", flush=True)
+        task_id = self.create_and_start_simple_task(
+            {
+                "assignmentType": "Assignment",
+                "deadline": (
+                    datetime.now().astimezone() + timedelta(days=1)
+                ).isoformat(),
+                "subject": "Входящее письмо обработано успешно.",
+                "importance": "Normal",
+                "text": SUCCESS_TASK_TEXT,
+                "performerIds": [self.performer_id],
+                "observerIds": [self.performer_id],
+                "documentIds": [document_id],
+            },
+        )
+        print(
+            f"Задача успешной обработки создана и отправлена, id={task_id}.",
             flush=True,
         )

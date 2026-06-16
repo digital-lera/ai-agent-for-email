@@ -34,6 +34,8 @@ class FakeSession:
         self.calls.append((method, url, kwargs))
         if url.endswith("/IIncomingLetters"):
             return response({"Id": 42})
+        if url.endswith("/Docflow/CreateSimpleTask"):
+            return response(77)
         return response({})
 
 

@@ -6,7 +6,7 @@ from pathlib import Path
 import requests
 
 from src.backend.models import ExtractedData
-from src.scripts.directum import DirectumClient, find_fuzzy_id
+from src.scripts.directum import DirectumClient, SUCCESS_TASK_TEXT, find_fuzzy_id
 
 
 def response(payload, status=200):
@@ -102,6 +102,21 @@ class DirectumClientTests(unittest.TestCase):
             [call[2]["data"] for call in put_calls],
             [b"first", b"second"],
         )
+        task_calls = [
+            call
+            for call in session.calls
+            if call[1].endswith("/Docflow/CreateSimpleTask")
+        ]
+        self.assertEqual(len(task_calls), 1)
+        self.assertEqual(task_calls[0][2]["json"]["text"], SUCCESS_TASK_TEXT)
+        self.assertEqual(task_calls[0][2]["json"]["documentIds"], [42])
+        start_calls = [
+            call
+            for call in session.calls
+            if call[1].endswith("/Docflow/StartTask")
+        ]
+        self.assertEqual(len(start_calls), 1)
+        self.assertEqual(start_calls[0][2]["json"], {"taskId": 77})
 
     def test_reports_review_task_creation(self):
         session = FakeSession()
@@ -139,6 +154,14 @@ class DirectumClientTests(unittest.TestCase):
         self.assertEqual(len(start_calls), 1)
         self.assertEqual(start_calls[0][2]["json"], {"taskId": 77})
         self.assertIs(start_calls[0][2]["verify"], False)
+        task_payloads = [
+            call[2]["json"]
+            for call in session.calls
+            if call[1].endswith("/Docflow/CreateSimpleTask")
+        ]
+        self.assertEqual(len(task_payloads), 1)
+        self.assertIn("Некоторые данные письма требуют ручной проверки", task_payloads[0]["text"])
+        self.assertNotEqual(task_payloads[0]["text"], SUCCESS_TASK_TEXT)
 
     def test_extracts_task_id_from_wrapped_response(self):
         self.assertEqual(
