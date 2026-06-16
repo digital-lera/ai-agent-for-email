@@ -393,7 +393,7 @@ class DirectumClient:
                 "deadline": (
                     datetime.now().astimezone() + timedelta(days=1)
                 ).isoformat(),
-                "subject": "Входящее письмо обработано с ошибкой.",
+                "subject": "Входящее письмо обработано, имеются неточные данные.",
                 "importance": "Normal",
                 "text": (
                     "Некоторые данные письма требуют ручной проверки:\n"
