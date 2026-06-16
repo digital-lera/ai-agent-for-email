@@ -1,4 +1,5 @@
 from src.backend.models import MessageContext, PipelineResult, ProcessingError
+from src.backend.progress import emit_progress, progress_store
 
 
 def run_chain(socketio, context: MessageContext, config: dict) -> PipelineResult:
@@ -17,6 +18,15 @@ def run_chain(socketio, context: MessageContext, config: dict) -> PipelineResult
     for name, event_prefix, stage in stages:
         print(f"\nТекущая операция: {name}", flush=True)
         status = {"stage": name, "status": "В процессе", "log": ""}
+        progress_store.update(
+            {
+                "status": "running",
+                "chain": status,
+                "stages": {event_prefix: "in-process"},
+                "message": f"В процессе: {name}",
+            }
+        )
+        emit_progress(socketio)
         socketio.emit("chain_update", status)
         socketio.emit(f"{event_prefix}_started", True)
 
@@ -25,20 +35,45 @@ def run_chain(socketio, context: MessageContext, config: dict) -> PipelineResult
         except Exception as exc:
             message = f"{name}: {exc}"
             print(f"Ошибка этапа: {message}", flush=True)
+            error_status = {"stage": name, "status": "Ошибка", "log": message}
+            progress_store.update(
+                {
+                    "status": "error",
+                    "chain": error_status,
+                    "stages": {event_prefix: "error"},
+                    "message": "Ошибка! Дополнительную информацию можно найти в консоли или логах",
+                }
+            )
+            emit_progress(socketio)
             socketio.emit(
                 "chain_update",
-                {"stage": name, "status": "Ошибка", "log": message},
+                error_status,
             )
             socketio.emit("error", {"message": message})
             return PipelineResult(success=False, error=message)
 
+        completed_status = {
+            "stage": name,
+            "status": "Завершено",
+            "log": f"Процесс завершен - {name}",
+        }
+        progress_store.update(
+            {
+                "chain": completed_status,
+                "stages": {event_prefix: "completed"},
+                "message": f"Процесс завершен: {name}",
+            }
+        )
+        emit_progress(socketio)
         socketio.emit(
             "chain_update",
-            {"stage": name, "status": "Завершено", "log": f"Процесс завершен - {name}"},
+            completed_status,
         )
         socketio.emit(f"{event_prefix}_finished", True)
         print(f"Процесс завершен: {name}", flush=True)
         if event_prefix == "ai_data_recognition":
+            progress_store.update({"data": state["extracted_data"].to_dict()})
+            emit_progress(socketio)
             socketio.emit(
                 "json_data_received",
                 state["extracted_data"].to_dict(),
@@ -50,6 +85,13 @@ def run_chain(socketio, context: MessageContext, config: dict) -> PipelineResult
         f"Обработка письма полностью завершена. Directum document_id={document_id}",
         flush=True,
     )
+    progress_store.update(
+        {
+            "status": "completed",
+            "message": "Обработка завершена",
+        }
+    )
+    emit_progress(socketio)
     socketio.emit("chain_complete", {"document_id": document_id})
     return PipelineResult(
         success=True,

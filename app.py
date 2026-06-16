@@ -8,6 +8,7 @@ from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
 
 import src.backend.email_check as email_worker
+from src.backend.progress import progress_store
 from src.backend.statistics import statistics_store
 
 app = Flask(__name__, template_folder="src/frontend/templates", static_folder="src/frontend/static")
@@ -22,6 +23,7 @@ def index():
 @socketio.on("connect")
 def send_initial_statistics(auth=None):
     emit("statistics_update", statistics_store.get_today().to_dict())
+    emit("progress_snapshot", progress_store.get())
 
 
 def process_email(socketio):

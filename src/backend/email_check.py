@@ -15,6 +15,7 @@ from src.backend.directum_rules import (
     load_directum_rules,
 )
 from src.backend.models import MessageContext, ProcessingError
+from src.backend.progress import emit_progress, progress_store, schedule_progress_reset
 from src.backend.statistics import emit_statistics, increment_and_emit
 from src.scripts.send_error_task import create_error_task
 
@@ -161,6 +162,12 @@ def _process_one_message(
     )
 
     socketio.emit("reset")
+    progress_store.start_email(
+        job_id=context.job_id,
+        subject=subject,
+        sender=sender,
+    )
+    emit_progress(socketio)
     socketio.emit("new_email", {"subject": subject, "sender": sender})
     statistics_tracked = False
     try:
@@ -192,6 +199,18 @@ def _process_one_message(
                 f"{email_decision.reason}",
                 flush=True,
             )
+            progress_store.update(
+                {
+                    "status": "completed",
+                    "chain": {
+                        "stage": "Маршрутизация письма",
+                        "status": "Завершено",
+                        "log": email_decision.reason,
+                    },
+                    "message": "Письмо обработано правилом маршрутизации",
+                }
+            )
+            emit_progress(socketio)
             increment_and_emit(socketio, "received", context.message_id)
             increment_and_emit(socketio, "successful", context.message_id)
             statistics_tracked = True
@@ -208,7 +227,20 @@ def _process_one_message(
                     "PDF-вложения не найдены. Письмо не передается в pipeline.",
                     flush=True,
                 )
+                progress_store.update(
+                    {
+                        "status": "error",
+                        "chain": {
+                            "stage": "Проверка вложений",
+                            "status": "Ошибка",
+                            "log": "PDF-вложения не найдены. Требуется ручная обработка.",
+                        },
+                        "message": "Письмо помечено для ручной обработки",
+                    }
+                )
+                emit_progress(socketio)
                 _mark_for_manual_processing(imap, message_number)
+                schedule_progress_reset(socketio, context.job_id)
                 return
 
             increment_and_emit(socketio, "received", context.message_id)
@@ -223,6 +255,18 @@ def _process_one_message(
                 increment_and_emit(socketio, outcome, context.message_id)
     except Exception as exc:
         print(f"Письмо обработать не удалось: {exc}", flush=True)
+        progress_store.update(
+            {
+                "status": "error",
+                "chain": {
+                    "stage": "Ошибка обработки",
+                    "status": "Ошибка",
+                    "log": str(exc),
+                },
+                "message": "Ошибка! Дополнительную информацию можно найти в консоли или логах",
+            }
+        )
+        emit_progress(socketio)
         socketio.emit("error", {"message": str(exc)})
         _mark_for_manual_processing(imap, message_number)
         print("Письмо помечено флагом для ручной обработки.", flush=True)
@@ -238,6 +282,8 @@ def _process_one_message(
                 "error",
                 {"message": f"{exc}; error task also failed: {task_exc}"},
             )
+        finally:
+            schedule_progress_reset(socketio, context.job_id)
     else:
         print("Все этапы успешны. Перемещение письма в обработанные.", flush=True)
         try:
@@ -249,6 +295,21 @@ def _process_one_message(
             )
             socketio.emit("error", {"message": str(move_exc)})
             _mark_for_manual_processing(imap, message_number)
+            progress_store.update(
+                {
+                    "status": "error",
+                    "chain": {
+                        "stage": "Перемещение письма",
+                        "status": "Ошибка",
+                        "log": str(move_exc),
+                    },
+                    "message": "Обработка завершена, но письмо не перемещено",
+                }
+            )
+            emit_progress(socketio)
+            schedule_progress_reset(socketio, context.job_id)
+        else:
+            schedule_progress_reset(socketio, context.job_id)
     finally:
         print(f"Очистка рабочей директории: {context.work_dir}", flush=True)
         context.cleanup()
@@ -300,6 +361,8 @@ def _save_attachments(
                     flush=True,
                 )
         socketio.emit("filename_recognized", safe_name)
+        progress_store.update({"filename": safe_name})
+        emit_progress(socketio)
 
     print(
         f"Всего вложений: {len(context.attachments)}, "

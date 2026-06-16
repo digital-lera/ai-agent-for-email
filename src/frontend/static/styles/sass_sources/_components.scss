@@ -77,6 +77,18 @@
                     border-radius: 30px;
 
                     background-color: $gray-icon;
+                    overflow: hidden;
+                    position: relative;
+                }
+
+                .steps-list__element__progress-bar::after {
+                    content: "";
+                    display: block;
+                    width: 0;
+                    height: 100%;
+                    border-radius: inherit;
+                    background-color: $gray-icon;
+                    transition: width 0.4s ease, background-color 0.2s ease;
                 }
 
                 :last-child{
@@ -95,20 +107,38 @@
             .steps-list__element.in-process{
                 opacity: 100%;
 
-                .steps-list__element__progress-bar {
-                    
-
+                .steps-list__element__progress-bar::after {
+                    width: 60%;
                     background-color: orange;
+                    animation: progress-pulse 1.4s ease-in-out infinite alternate;
                 }
             }
 
             .steps-list__element.completed{
                 opacity: 100%;
 
-                .steps-list__element__progress-bar {
-                    
-
+                .steps-list__element__progress-bar::after {
+                    width: 100%;
                     background-color: green;
+                }
+            }
+
+            .steps-list__element.error{
+                opacity: 100%;
+
+                .steps-list__element__progress-bar::after {
+                    width: 100%;
+                    background-color: $error-red;
+                }
+            }
+
+            @keyframes progress-pulse {
+                from {
+                    width: 35%;
+                }
+
+                to {
+                    width: 85%;
                 }
             }
 

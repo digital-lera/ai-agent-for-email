@@ -67,6 +67,17 @@
   height: 7px;
   border-radius: 30px;
   background-color: #C9C9C9;
+  overflow: hidden;
+  position: relative;
+}
+.dashboard__main-info .board.refinement-steps .steps-list .steps-list__element .steps-list__element__progress-bar::after {
+  content: "";
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background-color: #C9C9C9;
+  transition: width 0.4s ease, background-color 0.2s ease;
 }
 .dashboard__main-info .board.refinement-steps .steps-list .steps-list__element :last-child {
   margin-bottom: 0;
@@ -76,6 +87,36 @@
   -webkit-box-shadow: none;
   -moz-box-shadow: none;
   box-shadow: none;
+}
+.dashboard__main-info .board.refinement-steps .steps-list .steps-list__element.in-process {
+  opacity: 100%;
+}
+.dashboard__main-info .board.refinement-steps .steps-list .steps-list__element.in-process .steps-list__element__progress-bar::after {
+  width: 60%;
+  background-color: orange;
+  animation: progress-pulse 1.4s ease-in-out infinite alternate;
+}
+.dashboard__main-info .board.refinement-steps .steps-list .steps-list__element.completed {
+  opacity: 100%;
+}
+.dashboard__main-info .board.refinement-steps .steps-list .steps-list__element.completed .steps-list__element__progress-bar::after {
+  width: 100%;
+  background-color: green;
+}
+.dashboard__main-info .board.refinement-steps .steps-list .steps-list__element.error {
+  opacity: 100%;
+}
+.dashboard__main-info .board.refinement-steps .steps-list .steps-list__element.error .steps-list__element__progress-bar::after {
+  width: 100%;
+  background-color: #FF1418;
+}
+@keyframes progress-pulse {
+  from {
+    width: 35%;
+  }
+  to {
+    width: 85%;
+  }
 }
 .dashboard__main-info .board.obtained-data .obtained-data__list {
   list-style-type: none;
