@@ -1,6 +1,7 @@
 from pathlib import Path
 import json
 import os
+import time
 from ollama import Client
 
 from src.backend.models import ExtractedData, ProcessingError
@@ -9,6 +10,9 @@ from src.backend.models import ExtractedData, ProcessingError
 scripts_dir = Path(__file__).resolve().parent
 MODEL_NAME = os.getenv("OLLAMA_MODEL", "qwen3:8b")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+DEFAULT_OLLAMA_PULL_RETRIES = 3
+DEFAULT_OLLAMA_PULL_TIMEOUT = 600
+DEFAULT_OLLAMA_PULL_RETRY_DELAY = 10
 
 
 def _read_prompt(name):
@@ -21,9 +25,22 @@ def _read_prompt(name):
         raise ProcessingError(f"Failed to read AI prompt {name}: {exc}") from exc
 
 
-def _get_client():
+def _get_client(config=None):
+    config = config or {}
+    pull_timeout = _config_number(
+        os.getenv("OLLAMA_PULL_TIMEOUT", config.get("ollama_pull_timeout")),
+        DEFAULT_OLLAMA_PULL_TIMEOUT,
+    )
     print(f"Подключение к Ollama: {OLLAMA_HOST}", flush=True)
-    client = Client(host=OLLAMA_HOST)
+    try:
+        client = Client(host=OLLAMA_HOST, timeout=pull_timeout)
+    except TypeError:
+        print(
+            "Установленная версия ollama Client не поддерживает timeout. "
+            "Retry останется включенным, но HTTP timeout не будет применен.",
+            flush=True,
+        )
+        client = Client(host=OLLAMA_HOST)
     print("Получение списка моделей Ollama...", flush=True)
     local_models = client.list()
     models = getattr(local_models, "models", None)
@@ -38,21 +55,22 @@ def _get_client():
             f"Модель {MODEL_NAME} не найдена локально. Запускается загрузка.",
             flush=True,
         )
-        client.pull(MODEL_NAME)
+        _pull_model_with_retry(client, config)
         print(f"Модель {MODEL_NAME} загружена.", flush=True)
     else:
         print(f"Модель {MODEL_NAME} готова к работе.", flush=True)
     return client
 
 
-def process_text_with_ai(email_content, output_path, attachment_names=()):
+def process_text_with_ai(email_content, output_path, attachment_names=(), config=None):
+    config = config or {}
     if not email_content.strip():
         raise ProcessingError("No email text was provided to the AI stage")
 
     preprocessing_prompt = _read_prompt("prompt_for_preprocessing.txt")
     json_prompt = _read_prompt("prompt_for_json.txt")
     filenames = "\n".join(attachment_names)
-    client = _get_client()
+    client = _get_client(config)
 
     try:
         print(
@@ -103,3 +121,53 @@ def _response_text(response):
     if not isinstance(text, str):
         raise ProcessingError("Ollama returned an invalid response")
     return text
+
+
+def _pull_model_with_retry(client, config):
+    retries = _config_int(
+        os.getenv("OLLAMA_PULL_RETRIES", config.get("ollama_pull_retries")),
+        DEFAULT_OLLAMA_PULL_RETRIES,
+    )
+    retry_delay = _config_number(
+        os.getenv("OLLAMA_PULL_RETRY_DELAY", config.get("ollama_pull_retry_delay")),
+        DEFAULT_OLLAMA_PULL_RETRY_DELAY,
+    )
+    last_error = None
+    for attempt in range(1, retries + 1):
+        try:
+            print(
+                f"Загрузка модели Ollama {MODEL_NAME}: попытка {attempt}/{retries}.",
+                flush=True,
+            )
+            client.pull(MODEL_NAME)
+            return
+        except Exception as exc:
+            last_error = exc
+            print(
+                f"Загрузка модели Ollama не удалась: {exc}.",
+                flush=True,
+            )
+            if attempt < retries:
+                print(
+                    f"Повторная попытка загрузки Ollama через {retry_delay:g} сек.",
+                    flush=True,
+                )
+                time.sleep(retry_delay)
+    raise ProcessingError(
+        f"Failed to download Ollama model {MODEL_NAME} after {retries} attempts: "
+        f"{last_error}"
+    )
+
+
+def _config_int(value, default):
+    try:
+        return max(1, int(value))
+    except (TypeError, ValueError):
+        return default
+
+
+def _config_number(value, default):
+    try:
+        return max(0.1, float(value))
+    except (TypeError, ValueError):
+        return default

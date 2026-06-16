@@ -23,8 +23,19 @@ OCR реализован в `src/scripts/pdf_parse.py`.
 - `ocr_confidence`;
 - `ocr_dpi`;
 - `ocr_heartbeat_seconds`;
+- `ocr_model_download_retries`;
+- `ocr_model_download_timeout`;
+- `ocr_model_download_retry_delay`;
 - `OCR_GPU`;
-- `OCR_CUDA_DEVICE`.
+- `OCR_CUDA_DEVICE`;
+- `OCR_MODEL_DOWNLOAD_RETRIES`;
+- `OCR_MODEL_DOWNLOAD_TIMEOUT`;
+- `OCR_MODEL_DOWNLOAD_RETRY_DELAY`.
+
+Инициализация `easyocr.Reader()` обернута в retry. На время инициализации
+выставляется временный socket timeout, чтобы зависшая загрузка OCR-моделей не
+останавливала обработчик навсегда. После инициализации прежний socket timeout
+восстанавливается.
 
 ## Этап AI
 
@@ -44,7 +55,16 @@ AI-извлечение реализовано в `src/scripts/ai_output_json.py
 Переменные окружения:
 
 - `OLLAMA_HOST`;
-- `OLLAMA_MODEL`.
+- `OLLAMA_MODEL`;
+- `OLLAMA_PULL_RETRIES`;
+- `OLLAMA_PULL_TIMEOUT`;
+- `OLLAMA_PULL_RETRY_DELAY`.
+
+Если модель Ollama отсутствует локально, загрузка через `client.pull()`
+выполняется с retry. `OLLAMA_PULL_TIMEOUT` или `ollama_pull_timeout` задает HTTP
+timeout клиента Ollama. Если установленная версия Python-клиента Ollama не
+поддерживает параметр `timeout`, приложение продолжит работу с retry, но без
+HTTP timeout на уровне клиента.
 
 ## Контракт извлеченных данных
 
@@ -80,4 +100,3 @@ JSON-ключи, ожидаемые от AI:
    Directum;
 3. проверяйте некорректные и пограничные ответы модели;
 4. запускайте тесты pipeline.
-

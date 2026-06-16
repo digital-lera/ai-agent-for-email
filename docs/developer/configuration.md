@@ -22,6 +22,12 @@
   "ocr_confidence": 0.5,
   "ocr_dpi": 200,
   "ocr_heartbeat_seconds": 15,
+  "ocr_model_download_retries": 3,
+  "ocr_model_download_timeout": 300,
+  "ocr_model_download_retry_delay": 10,
+  "ollama_pull_retries": 3,
+  "ollama_pull_timeout": 300,
+  "ollama_pull_retry_delay": 10,
   "directum_rules_path": "src/scripts/directum_rules.json",
   "smtp_server": "smtp.example",
   "smtp_port": 587,
@@ -45,8 +51,16 @@ Directum могут быть разными пользователями.
 - `SOCKETIO_CORS_ORIGINS`: настройка CORS для Socket.IO.
 - `OLLAMA_MODEL`: модель Ollama. По умолчанию `qwen3:8b`.
 - `OLLAMA_HOST`: адрес Ollama. По умолчанию `http://localhost:11434`.
+- `OLLAMA_PULL_RETRIES`: количество попыток загрузки модели Ollama.
+- `OLLAMA_PULL_TIMEOUT`: HTTP timeout загрузки модели Ollama в секундах.
+- `OLLAMA_PULL_RETRY_DELAY`: пауза между попытками загрузки модели Ollama.
 - `OCR_GPU`: переопределяет `ocr_gpu`.
 - `OCR_CUDA_DEVICE`: индекс CUDA-устройства для OCR. По умолчанию `0`.
+- `OCR_MODEL_DOWNLOAD_RETRIES`: количество попыток инициализации EasyOCR и
+  загрузки OCR-моделей.
+- `OCR_MODEL_DOWNLOAD_TIMEOUT`: socket timeout для загрузки OCR-моделей в
+  секундах.
+- `OCR_MODEL_DOWNLOAD_RETRY_DELAY`: пауза между попытками загрузки OCR-моделей.
 - `STATISTICS_TIMEZONE`: часовой пояс дневной статистики. По умолчанию
   `Europe/Moscow`.
 
@@ -72,4 +86,3 @@ Directum могут быть разными пользователями.
 - Ollama: локальный HTTP-сервис через Python-клиент `ollama`.
 - Directum RX: OData endpoint из `odataurl`.
 - OCR: `pdf2image`, EasyOCR, PyTorch и системный PDF renderer.
-

@@ -1,11 +1,17 @@
 import os
+import socket
 import threading
 import time
+from contextlib import contextmanager
 
 from pdf2image import convert_from_path
 import easyocr
 
 from src.backend.models import ProcessingError
+
+DEFAULT_OCR_MODEL_DOWNLOAD_RETRIES = 3
+DEFAULT_OCR_MODEL_DOWNLOAD_TIMEOUT = 600
+DEFAULT_OCR_MODEL_DOWNLOAD_RETRY_DELAY = 10
 
 
 def pdf_parse(pdf_files, output_path, config=None):
@@ -18,28 +24,44 @@ def pdf_parse(pdf_files, output_path, config=None):
     confidence = float(config.get("ocr_confidence", 0.5))
     dpi = int(config.get("ocr_dpi", 200))
     heartbeat_seconds = int(config.get("ocr_heartbeat_seconds", 15))
+    model_download_retries = _config_int(
+        os.getenv(
+            "OCR_MODEL_DOWNLOAD_RETRIES",
+            config.get("ocr_model_download_retries"),
+        ),
+        DEFAULT_OCR_MODEL_DOWNLOAD_RETRIES,
+    )
+    model_download_timeout = _config_number(
+        os.getenv(
+            "OCR_MODEL_DOWNLOAD_TIMEOUT",
+            config.get("ocr_model_download_timeout"),
+        ),
+        DEFAULT_OCR_MODEL_DOWNLOAD_TIMEOUT,
+    )
+    model_download_retry_delay = _config_number(
+        os.getenv(
+            "OCR_MODEL_DOWNLOAD_RETRY_DELAY",
+            config.get("ocr_model_download_retry_delay"),
+        ),
+        DEFAULT_OCR_MODEL_DOWNLOAD_RETRY_DELAY,
+    )
 
     print(f"Начинаю парсинг {len(pdf_files)} PDF файлов", flush=True)
     print(
         "Настройки OCR: "
-        f"gpu={gpu}, workers={workers}, confidence={confidence}, dpi={dpi}",
+        f"gpu={gpu}, workers={workers}, confidence={confidence}, dpi={dpi}, "
+        f"model_download_retries={model_download_retries}, "
+        f"model_download_timeout={model_download_timeout:g}",
         flush=True,
     )
     easyocr_device = _configure_cuda(gpu)
 
-    try:
-        started = time.monotonic()
-        print(
-            f"Инициализация EasyOCR Reader на устройстве {easyocr_device}...",
-            flush=True,
-        )
-        ocr = easyocr.Reader(["ru"], gpu=easyocr_device, verbose=True)
-        print(
-            f"EasyOCR Reader инициализирован за {time.monotonic() - started:.1f} сек.",
-            flush=True,
-        )
-    except Exception as exc:
-        raise ProcessingError(f"Failed to initialize OCR: {exc}") from exc
+    ocr = _initialize_easyocr_reader(
+        easyocr_device,
+        retries=model_download_retries,
+        timeout=model_download_timeout,
+        retry_delay=model_download_retry_delay,
+    )
 
     all_texts = []
 
@@ -186,10 +208,69 @@ def _read_page_with_heartbeat(
             reporter.join(timeout=1)
 
 
+def _initialize_easyocr_reader(easyocr_device, *, retries, timeout, retry_delay):
+    last_error = None
+    for attempt in range(1, retries + 1):
+        try:
+            started = time.monotonic()
+            print(
+                "Инициализация EasyOCR Reader на устройстве "
+                f"{easyocr_device}: попытка {attempt}/{retries}...",
+                flush=True,
+            )
+            with _temporary_socket_timeout(timeout):
+                reader = easyocr.Reader(["ru"], gpu=easyocr_device, verbose=True)
+            print(
+                "EasyOCR Reader инициализирован за "
+                f"{time.monotonic() - started:.1f} сек.",
+                flush=True,
+            )
+            return reader
+        except Exception as exc:
+            last_error = exc
+            print(
+                f"Инициализация EasyOCR Reader не удалась: {exc}.",
+                flush=True,
+            )
+            if attempt < retries:
+                print(
+                    f"Повторная попытка EasyOCR через {retry_delay:g} сек.",
+                    flush=True,
+                )
+                time.sleep(retry_delay)
+    raise ProcessingError(
+        f"Failed to initialize OCR after {retries} attempts: {last_error}"
+    )
+
+
+@contextmanager
+def _temporary_socket_timeout(timeout):
+    previous_timeout = socket.getdefaulttimeout()
+    socket.setdefaulttimeout(timeout)
+    try:
+        yield
+    finally:
+        socket.setdefaulttimeout(previous_timeout)
+
+
 def _config_bool(value):
     if isinstance(value, bool):
         return value
     return str(value).strip().lower() in {"1", "true", "yes", "on", "cuda"}
+
+
+def _config_int(value, default):
+    try:
+        return max(1, int(value))
+    except (TypeError, ValueError):
+        return default
+
+
+def _config_number(value, default):
+    try:
+        return max(0.1, float(value))
+    except (TypeError, ValueError):
+        return default
 
 
 def _configure_cuda(gpu_requested):

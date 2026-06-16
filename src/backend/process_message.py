@@ -99,6 +99,7 @@ def _extract_data(state):
         content,
         context.processed_data_path,
         [path.name for path in context.attachments],
+        state["config"],
     )
 
 
