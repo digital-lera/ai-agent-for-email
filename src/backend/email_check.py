@@ -105,7 +105,6 @@ def check_email(socketio) -> int:
         return len(message_ids)
     finally:
         if imap is not None:
-            print("Закрытие IMAP-соединения.", flush=True)
             _safe_logout(imap)
 
 
