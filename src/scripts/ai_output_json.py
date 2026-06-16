@@ -64,10 +64,6 @@ def process_text_with_ai(email_content, output_path, attachment_names=()):
             prompt=(
                 f"{preprocessing_prompt}\n\n"
                 f"ИМЕНА ВЛОЖЕНИЙ:\n{filenames}\n\n"
-                "ТЕКСТ ПИСЬМА:\n"
-                "<<<BEGIN_EMAIL>>>\n"
-                f"{email_content}\n"
-                "<<<END_EMAIL>>>"
             ),
             options={"temperature": 0.2, "thinking": False, "num_ctx": 40960},
         )
