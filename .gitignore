@@ -219,6 +219,7 @@ src/data/*.sqlite3-*
 !prompt_for_json.txt
 !prompt_for_preprocessing.txt
 **.json
+!directum_rules.json
 *.pdf
 src/scripts/input_data/file.png
 taif-mail.tar

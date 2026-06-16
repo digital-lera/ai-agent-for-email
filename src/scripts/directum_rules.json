@@ -1,0 +1,73 @@
+{
+  "rules": [
+    {
+      "name": "Do not send KalmykovaRR letters to Directum",
+      "enabled": true,
+      "when": {
+        "sender_email": "KalmykovaRR@taif.ru"
+      },
+      "actions": [
+        {
+          "type": "skip_directum",
+          "reason": "Sender is excluded from Directum processing"
+        }
+      ]
+    },
+    {
+      "name": "Replace Directum person id 807 with 582",
+      "enabled": true,
+      "when": {
+        "any_id": 807
+      },
+      "actions": [
+        {
+          "type": "replace_matched_id",
+          "id": 582
+        }
+      ]
+    },
+    {
+      "name": "Forward resume and candidate letters by text",
+      "enabled": true,
+      "when": {
+        "text_contains_any": [
+          "резюме",
+          "кандидат",
+          "отклик",
+          "соискатель",
+          "CV"
+        ]
+      },
+      "actions": [
+        {
+          "type": "forward_email",
+          "to": "MikhelAA@taif.ru"
+        },
+        {
+          "type": "skip_directum",
+          "reason": "Resume or candidate letter is handled by email forwarding"
+        }
+      ]
+    },
+    {
+      "name": "Forward resume and candidate letters by attachment name",
+      "enabled": true,
+      "when": {
+        "attachment_name_contains_any": [
+          "резюме",
+          "CV"
+        ]
+      },
+      "actions": [
+        {
+          "type": "forward_email",
+          "to": "MikhelAA@taif.ru"
+        },
+        {
+          "type": "skip_directum",
+          "reason": "Resume or candidate letter is handled by email forwarding"
+        }
+      ]
+    }
+  ]
+}
