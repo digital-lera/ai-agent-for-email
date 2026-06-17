@@ -266,6 +266,10 @@
                     color: $error-red;
                 }
 
+                .statistics__list__element__number--forwarded-recipient{
+                    color: $orange;
+                }
+
                 margin-bottom: 13px;
             }
             :last-child {

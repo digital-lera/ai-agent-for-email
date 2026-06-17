@@ -21,7 +21,8 @@
 
 ## События backend
 
-- `statistics_update`: дневные счетчики.
+- `statistics_update`: дневные счетчики (`received`, `successful`, `partial`,
+  `manual`, `forwarded_recipient`).
 - `progress_snapshot`: полный сохраненный snapshot прогресса при подключении.
 - `progress_update`: полный snapshot прогресса после изменения состояния.
 - `reset`: очистка текущего состояния интерфейса перед новым письмом.

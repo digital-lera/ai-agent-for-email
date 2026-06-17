@@ -98,6 +98,7 @@ def run_chain(socketio, context: MessageContext, config: dict) -> PipelineResult
         document_id=document_id,
         review_task_created=directum_result.review_task_created,
         skipped_directum=directum_result.skipped_directum,
+        forwarded_to_recipient=directum_result.forwarded_to_recipient,
     )
 
 

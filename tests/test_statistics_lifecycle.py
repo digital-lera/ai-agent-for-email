@@ -117,6 +117,17 @@ class StatisticsLifecycleTests(unittest.TestCase):
         )
         self.assertEqual(counters, ["received", "partial"])
 
+    def test_forwarded_recipient_completion_counts_forwarded_recipient(self):
+        counters = self.run_message(
+            PipelineResult(
+                success=True,
+                document_id=None,
+                skipped_directum=True,
+                forwarded_to_recipient=True,
+            )
+        )
+        self.assertEqual(counters, ["received", "forwarded_recipient"])
+
     def test_pipeline_failure_with_error_task_counts_manual(self):
         counters = self.run_message(
             PipelineResult(success=False, error="OCR failed")

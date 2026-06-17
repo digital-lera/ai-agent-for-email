@@ -123,6 +123,7 @@ class PipelineResult:
     review_task_created: bool = False
     error: str | None = None
     skipped_directum: bool = False
+    forwarded_to_recipient: bool = False
 
 
 @dataclass(frozen=True)
@@ -130,3 +131,4 @@ class DirectumResult:
     document_id: int | None
     review_task_created: bool
     skipped_directum: bool = False
+    forwarded_to_recipient: bool = False

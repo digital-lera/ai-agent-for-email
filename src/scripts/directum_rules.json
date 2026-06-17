@@ -25,6 +25,108 @@
           "id": 582
         }
       ]
+    },
+    {
+      "name": "Forward recipient 1342 to reception",
+      "enabled": true,
+      "when": {
+        "recipient_id": 1342
+      },
+      "actions": [
+        {
+          "type": "forward_email",
+          "to": "aksh@taif.ru"
+        },
+        {
+          "type": "skip_directum",
+          "reason": "Письмо переслано в приёмную получателя: Шигабутдинов Альберт"
+        }
+      ]
+    },
+    {
+      "name": "Forward recipient 1339 to reception",
+      "enabled": true,
+      "when": {
+        "recipient_id": 1339
+      },
+      "actions": [
+        {
+          "type": "forward_email",
+          "to": "ref@taif.ru"
+        },
+        {
+          "type": "skip_directum",
+          "reason": "Письмо переслано в приёмную получателя: Сультеев Рустем"
+        }
+      ]
+    },
+    {
+      "name": "Forward recipient 1336 to reception",
+      "enabled": true,
+      "when": {
+        "recipient_id": 1336
+      },
+      "actions": [
+        {
+          "type": "forward_email",
+          "to": "ppres@taif.ru"
+        },
+        {
+          "type": "skip_directum",
+          "reason": "Письмо переслано в приёмную получателя: Пресняков Владимир"
+        }
+      ]
+    },
+    {
+      "name": "Forward recipient 1338 to reception",
+      "enabled": true,
+      "when": {
+        "recipient_id": 1338
+      },
+      "actions": [
+        {
+          "type": "forward_email",
+          "to": "pr_SafinaGM@taif.ru"
+        },
+        {
+          "type": "skip_directum",
+          "reason": "Письмо переслано в приёмную получателя: Сафина Гузелия"
+        }
+      ]
+    },
+    {
+      "name": "Forward recipient 1337 to reception",
+      "enabled": true,
+      "when": {
+        "recipient_id": 1337
+      },
+      "actions": [
+        {
+          "type": "forward_email",
+          "to": "flura@taif.ru"
+        },
+        {
+          "type": "skip_directum",
+          "reason": "Письмо переслано в приёмную получателя: Сафин Ильдус"
+        }
+      ]
+    },
+    {
+      "name": "Forward recipient 1341 to reception",
+      "enabled": true,
+      "when": {
+        "recipient_id": 1341
+      },
+      "actions": [
+        {
+          "type": "forward_email",
+          "to": "prfsh@taif.ru"
+        },
+        {
+          "type": "skip_directum",
+          "reason": "Письмо переслано в приёмную получателя: Шигабутдинов Айрат"
+        }
+      ]
     }
   ]
 }

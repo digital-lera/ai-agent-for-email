@@ -193,6 +193,9 @@
 .dashboard__dev-info .board.statistics .statistics__list .statistics__list__element .statistics__list__element__number--manual {
   color: #FF1418;
 }
+.dashboard__dev-info .board.statistics .statistics__list .statistics__list__element .statistics__list__element__number--forwarded-recipient {
+  color: #FF9838;
+}
 .dashboard__dev-info .board.statistics .statistics__list .statistics__list__element {
   margin-bottom: 13px;
 }

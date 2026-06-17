@@ -246,7 +246,12 @@ def _process_one_message(
             if not result.success:
                 raise ProcessingError(result.error or "Processing pipeline failed")
             if statistics_tracked:
-                outcome = "partial" if result.review_task_created else "successful"
+                if result.forwarded_to_recipient:
+                    outcome = "forwarded_recipient"
+                elif result.review_task_created:
+                    outcome = "partial"
+                else:
+                    outcome = "successful"
                 increment_and_emit(socketio, outcome, context.message_id)
     except Exception as exc:
         print(f"Письмо обработать не удалось: {exc}", flush=True)

@@ -261,6 +261,7 @@ class DirectumClient:
                 document_id=None,
                 review_task_created=False,
                 skipped_directum=True,
+                forwarded_to_recipient=bool(decision.forward_to),
             )
 
         if not data.correspondent:

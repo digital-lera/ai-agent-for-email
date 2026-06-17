@@ -168,6 +168,12 @@
                         </p>
                         <p class="statistics__list__element__number statistics__list__element__number--manual" id="statistics-manual">0</p>
                     </li>
+                    <li class="statistics__list__element">
+                        <p class="statistics__list__element__field-name">
+                            Письмо переслано в приёмную получателя:
+                        </p>
+                        <p class="statistics__list__element__number statistics__list__element__number--forwarded-recipient" id="statistics-forwarded-recipient">0</p>
+                    </li>
                 </ul>
             </div>
           </section>
@@ -286,6 +292,8 @@
                 data.partial ?? 0;
               document.getElementById("statistics-manual").textContent =
                 data.manual ?? 0;
+              document.getElementById("statistics-forwarded-recipient").textContent =
+                data.forwarded_recipient ?? 0;
           });
 
           socket.on("progress_snapshot", renderProgress);

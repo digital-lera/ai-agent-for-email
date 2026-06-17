@@ -17,12 +17,14 @@ COUNTER_COLUMNS = {
     "successful": "successful",
     "partial": "partial",
     "manual": "manual",
+    "forwarded_recipient": "forwarded_recipient",
 }
 COUNTER_GROUPS = {
     "received": "received",
     "successful": "outcome",
     "partial": "outcome",
     "manual": "outcome",
+    "forwarded_recipient": "outcome",
 }
 STATISTICS_TIMEZONE = ZoneInfo(
     os.getenv("STATISTICS_TIMEZONE", "Europe/Moscow")
@@ -36,6 +38,7 @@ class DailyStatistics:
     successful: int
     partial: int
     manual: int
+    forwarded_recipient: int
 
     def to_dict(self) -> dict[str, int | str]:
         return {
@@ -44,6 +47,7 @@ class DailyStatistics:
             "successful": self.successful,
             "partial": self.partial,
             "manual": self.manual,
+            "forwarded_recipient": self.forwarded_recipient,
         }
 
 
@@ -62,7 +66,7 @@ class StatisticsStore:
         with self._connect() as connection:
             row = connection.execute(
                 """
-                SELECT day, received, successful, partial, manual
+                SELECT day, received, successful, partial, manual, forwarded_recipient
                 FROM daily_statistics
                 WHERE day = ?
                 """,
@@ -70,7 +74,7 @@ class StatisticsStore:
             ).fetchone()
 
         if row is None:
-            return DailyStatistics(day_value, 0, 0, 0, 0)
+            return DailyStatistics(day_value, 0, 0, 0, 0, 0)
         return DailyStatistics(*row)
 
     def increment(
@@ -92,8 +96,8 @@ class StatisticsStore:
                 connection.execute(
                     """
                     INSERT INTO daily_statistics (
-                        day, received, successful, partial, manual
-                    ) VALUES (?, 0, 0, 0, 0)
+                        day, received, successful, partial, manual, forwarded_recipient
+                    ) VALUES (?, 0, 0, 0, 0, 0)
                     ON CONFLICT(day) DO NOTHING
                     """,
                     (day_value,),
@@ -127,10 +131,22 @@ class StatisticsStore:
                     received INTEGER NOT NULL DEFAULT 0,
                     successful INTEGER NOT NULL DEFAULT 0,
                     partial INTEGER NOT NULL DEFAULT 0,
-                    manual INTEGER NOT NULL DEFAULT 0
+                    manual INTEGER NOT NULL DEFAULT 0,
+                    forwarded_recipient INTEGER NOT NULL DEFAULT 0
                 )
                 """
             )
+            columns = {
+                row[1]
+                for row in connection.execute("PRAGMA table_info(daily_statistics)")
+            }
+            if "forwarded_recipient" not in columns:
+                connection.execute(
+                    """
+                    ALTER TABLE daily_statistics
+                    ADD COLUMN forwarded_recipient INTEGER NOT NULL DEFAULT 0
+                    """
+                )
             connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS statistics_events_v2 (
@@ -165,7 +181,8 @@ def increment_and_emit(
         "Статистика обновлена: "
         f"date={snapshot.day}, received={snapshot.received}, "
         f"successful={snapshot.successful}, partial={snapshot.partial}, "
-        f"manual={snapshot.manual}",
+        f"manual={snapshot.manual}, "
+        f"forwarded_recipient={snapshot.forwarded_recipient}",
         flush=True,
     )
     emit_statistics(socketio, snapshot)

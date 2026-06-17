@@ -62,7 +62,8 @@ Email-level правила могут смотреть на:
 
 1. увеличивается счетчик `received`;
 2. запускается `run_chain()`;
-3. итог учитывается как `successful`, `partial` или `manual`.
+3. итог учитывается как `successful`, `partial`, `forwarded_recipient` или
+   `manual`.
 
 ## Завершение в IMAP
 
@@ -82,4 +83,3 @@ Email-level правила могут смотреть на:
 2. IMAP-письмо помечается для ручной обработки;
 3. `send_error_task.create_error_task()` пытается создать задачу в Directum;
 4. счетчик `manual` увеличивается только если задача создана.
-

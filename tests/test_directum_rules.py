@@ -230,6 +230,7 @@ class DirectumRuleTests(unittest.TestCase):
             result = client.create_incoming_letter(data, [], context=context)
 
         self.assertTrue(result.skipped_directum)
+        self.assertTrue(result.forwarded_to_recipient)
         self.assertIsNone(result.document_id)
         forward.assert_called_once()
         self.assertFalse(

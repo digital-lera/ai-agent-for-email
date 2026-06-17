@@ -23,6 +23,7 @@ class StatisticsStoreTests(unittest.TestCase):
         self.assertEqual(snapshot.successful, 1)
         self.assertEqual(snapshot.partial, 0)
         self.assertEqual(snapshot.manual, 0)
+        self.assertEqual(snapshot.forwarded_recipient, 0)
 
     def test_same_message_and_counter_is_idempotent(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -49,9 +50,15 @@ class StatisticsStoreTests(unittest.TestCase):
                 message_id="<two@example>",
                 day=day,
             )
+            snapshot = store.increment(
+                "forwarded_recipient",
+                message_id="<three@example>",
+                day=day,
+            )
 
         self.assertEqual(snapshot.successful, 1)
         self.assertEqual(snapshot.partial, 1)
+        self.assertEqual(snapshot.forwarded_recipient, 1)
 
     def test_same_message_has_only_one_terminal_outcome(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -60,13 +67,13 @@ class StatisticsStoreTests(unittest.TestCase):
 
             store.increment("successful", message_id="<one@example>", day=day)
             snapshot = store.increment(
-                "partial",
+                "forwarded_recipient",
                 message_id="<one@example>",
                 day=day,
             )
 
         self.assertEqual(snapshot.successful, 1)
-        self.assertEqual(snapshot.partial, 0)
+        self.assertEqual(snapshot.forwarded_recipient, 0)
 
 
 if __name__ == "__main__":
