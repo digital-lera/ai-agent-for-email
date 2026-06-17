@@ -197,9 +197,9 @@ class DirectumClient:
                 "$select": "Id,Name",
             },
         )
-        payload = response.json()
+        payload = self._lookup_payload(response, entity)
         matched_id = find_fuzzy_id(
-            payload.get("value", []),
+            payload,
             name,
             is_person=is_person,
         )
@@ -208,6 +208,29 @@ class DirectumClient:
             flush=True,
         )
         return matched_id
+
+    @staticmethod
+    def _lookup_payload(response: requests.Response, entity: str) -> list[dict[str, Any]]:
+        try:
+            payload = response.json()
+        except ValueError:
+            print(
+                f"Directum lookup {entity} returned an empty or non-JSON response. "
+                "Считаю, что совпадений нет.",
+                flush=True,
+            )
+            return []
+
+        if isinstance(payload, dict):
+            value = payload.get("value", [])
+        elif isinstance(payload, list):
+            value = payload
+        else:
+            value = []
+
+        if not isinstance(value, list):
+            return []
+        return [item for item in value if isinstance(item, dict)]
 
     def create_incoming_letter(
         self,

@@ -51,6 +51,25 @@ class LookupSession(FakeSession):
         return response({})
 
 
+class EmptyEmployeeLookupSession(FakeSession):
+    def request(self, method, url, **kwargs):
+        self.calls.append((method, url, kwargs))
+        if url.endswith("/IContacts"):
+            return response({"value": []})
+        if url.endswith("/IEmployees"):
+            result = requests.Response()
+            result.status_code = 200
+            result._content = b""
+            return result
+        if url.endswith("/ICounterparties"):
+            return response({"value": []})
+        if url.endswith("/IIncomingLetters"):
+            return response({"Id": 42})
+        if url.endswith("/Docflow/CreateSimpleTask"):
+            return response(77)
+        return response({})
+
+
 class DirectumClientTests(unittest.TestCase):
     def test_from_config_uses_directum_username(self):
         client = DirectumClient.from_config(
@@ -223,6 +242,36 @@ class DirectumClientTests(unittest.TestCase):
         self.assertEqual(len(task_payloads), 1)
         self.assertIn("Некоторые данные письма требуют ручной проверки", task_payloads[0]["text"])
         self.assertNotEqual(task_payloads[0]["text"], SUCCESS_TASK_TEXT)
+
+    def test_empty_lookup_response_counts_as_no_match(self):
+        session = EmptyEmployeeLookupSession()
+        client = DirectumClient(
+            base_url="https://directum.example",
+            auth=("user", "password"),
+            performer_id=1,
+            session=session,
+        )
+        data = ExtractedData.from_mapping(
+            {
+                "content": "Текст",
+                "correspondent": "",
+                "dateFrom": "16.06.2026",
+                "number": "123-4",
+                "signedBy": "",
+                "recipient": "Петров П",
+            }
+        )
+
+        result = client.create_incoming_letter(data, [])
+
+        self.assertTrue(result.review_task_created)
+        self.assertFalse(result.skipped_directum)
+        letter_payload = [
+            call[2]["json"]
+            for call in session.calls
+            if call[1].endswith("/IIncomingLetters")
+        ][0]
+        self.assertNotIn("Addressee@odata.bind", letter_payload)
 
     def test_extracts_task_id_from_wrapped_response(self):
         self.assertEqual(
