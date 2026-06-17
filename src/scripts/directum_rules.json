@@ -25,46 +25,6 @@
           "id": 582
         }
       ]
-    },
-    {
-      "name": "Forward resume and candidate letters by text",
-      "enabled": true,
-      "when": {
-        "text_contains_any": [
-          "резюме",
-          "CV"
-        ]
-      },
-      "actions": [
-        {
-          "type": "forward_email",
-          "to": "MikhelAA@taif.ru"
-        },
-        {
-          "type": "skip_directum",
-          "reason": "Письмо содержит текст резюме или сопроводительного письма, обработка осуществляется пересылкой на указанный адрес"
-        }
-      ]
-    },
-    {
-      "name": "Forward resume and candidate letters by attachment name",
-      "enabled": true,
-      "when": {
-        "attachment_name_contains_any": [
-          "резюме",
-          "CV"
-        ]
-      },
-      "actions": [
-        {
-          "type": "forward_email",
-          "to": "MikhelAA@taif.ru"
-        },
-        {
-          "type": "skip_directum",
-          "reason": "Письмо содержит вложение с резюме или сопроводительным письмом, обработка осуществляется пересылкой на указанный адрес"
-        }
-      ]
     }
   ]
 }

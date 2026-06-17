@@ -68,23 +68,12 @@ class ExtractedData:
         if not isinstance(value, dict):
             raise ValidationError("AI output must be a JSON object")
 
-        required = {
-            "content",
-            "correspondent",
-            "dateFrom",
-            "number",
-            "signedBy",
-            "recipient",
-        }
-
-        fields = {key: value[key] for key in required}
-
-        content = fields["content"].strip()
-        correspondent = fields["correspondent"].strip()
-        date_from = fields["dateFrom"].strip()
-        number = fields["number"].strip()
-        signed_by = fields["signedBy"].strip()
-        recipient = fields["recipient"].strip()
+        content = str(value.get("content", "") or "").strip()
+        correspondent = str(value.get("correspondent", "") or "").strip()
+        date_from = str(value.get("dateFrom", "") or "").strip()
+        number = str(value.get("number", "") or "").strip()
+        signed_by = str(value.get("signedBy", "") or "").strip()
+        recipient = str(value.get("recipient", "") or "").strip()
 
         if not content:
             raise ValidationError("Агент не смог выделить краткое содержание письма")

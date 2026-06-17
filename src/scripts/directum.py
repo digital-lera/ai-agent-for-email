@@ -263,20 +263,28 @@ class DirectumClient:
                 skipped_directum=True,
             )
 
-        if data.signed_by and signed_by_id < 1:
-            self.errors.append(
-                f"Контакт подписанта '{data.signed_by}' не найден."
-            )
-        if data.recipient and recipient_id < 1:
-            self.errors.append(f"Адресат '{data.recipient}' не найден.")
-        if data.correspondent and (counterparty_id < 1 or data.correspondent == ""):
+        if not data.correspondent:
+            self.errors.append("Контрагент не распознан.")
+        elif counterparty_id < 1:
             self.errors.append(
                 f"Контрагент '{data.correspondent}' не найден."
             )
 
-        if data.number == "":
+        if not data.signed_by:
+            self.errors.append("Подписант не распознан.")
+        elif signed_by_id < 1:
+            self.errors.append(
+                f"Контакт подписанта '{data.signed_by}' не найден."
+            )
+
+        if not data.recipient:
+            self.errors.append("Адресат не распознан.")
+        elif recipient_id < 1:
+            self.errors.append(f"Адресат '{data.recipient}' не найден.")
+
+        if not data.number:
             self.errors.append("Номер письма не распознан.")
-        if data.date_from == "":
+        if not data.date_from:
             self.errors.append("Дата письма не распознана.")
 
         payload: dict[str, Any] = {

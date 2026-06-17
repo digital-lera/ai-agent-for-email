@@ -32,6 +32,21 @@ class ExtractedDataTests(unittest.TestCase):
                 }
             )
 
+    def test_missing_optional_fields_become_empty_strings(self):
+        data = ExtractedData.from_mapping({"content": "Текст"})
+
+        self.assertEqual(
+            data.to_dict(),
+            {
+                "content": "Текст",
+                "correspondent": "",
+                "dateFrom": "",
+                "number": "",
+                "signedBy": "",
+                "recipient": "",
+            },
+        )
+
     def test_rejects_non_json_model_output(self):
         with self.assertRaises(ValidationError):
             ExtractedData.from_json("not json")

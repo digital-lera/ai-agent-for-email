@@ -35,6 +35,22 @@ class FakeSession:
         return response({})
 
 
+class LookupSession(FakeSession):
+    def request(self, method, url, **kwargs):
+        self.calls.append((method, url, kwargs))
+        if url.endswith("/IContacts"):
+            return response({"value": [{"Id": 10, "Name": "Иванов Иван Иванович"}]})
+        if url.endswith("/IEmployees"):
+            return response({"value": [{"Id": 20, "Name": "Петров Петр Петрович"}]})
+        if url.endswith("/ICounterparties"):
+            return response({"value": [{"Id": 30, "Name": "ООО Ромашка"}]})
+        if url.endswith("/IIncomingLetters"):
+            return response({"Id": 42})
+        if url.endswith("/Docflow/CreateSimpleTask"):
+            return response(77)
+        return response({})
+
+
 class DirectumClientTests(unittest.TestCase):
     def test_from_config_uses_directum_username(self):
         client = DirectumClient.from_config(
@@ -62,7 +78,7 @@ class DirectumClientTests(unittest.TestCase):
         )
         self.assertEqual(item_id, 5)
 
-    def test_uploads_each_attachment_and_omits_missing_bindings(self):
+    def test_empty_json_fields_make_result_partial(self):
         session = FakeSession()
         client = DirectumClient(
             base_url="https://directum.example",
@@ -89,7 +105,7 @@ class DirectumClientTests(unittest.TestCase):
             result = client.create_incoming_letter(data, [first, second])
 
         self.assertEqual(result.document_id, 42)
-        self.assertFalse(result.review_task_created)
+        self.assertTrue(result.review_task_created)
         self.assertFalse(session.verify)
         self.assertTrue(all(call[2]["verify"] is False for call in session.calls))
         letter_payload = session.calls[0][2]["json"]
@@ -108,7 +124,11 @@ class DirectumClientTests(unittest.TestCase):
             if call[1].endswith("/Docflow/CreateSimpleTask")
         ]
         self.assertEqual(len(task_calls), 1)
-        self.assertEqual(task_calls[0][2]["json"]["text"], SUCCESS_TASK_TEXT)
+        self.assertIn(
+            "Некоторые данные письма требуют ручной проверки",
+            task_calls[0][2]["json"]["text"],
+        )
+        self.assertNotEqual(task_calls[0][2]["json"]["text"], SUCCESS_TASK_TEXT)
         self.assertEqual(task_calls[0][2]["json"]["documentIds"], [42])
         start_calls = [
             call
@@ -117,6 +137,47 @@ class DirectumClientTests(unittest.TestCase):
         ]
         self.assertEqual(len(start_calls), 1)
         self.assertEqual(start_calls[0][2]["json"], {"taskId": 77})
+
+    def test_complete_json_fields_create_success_task(self):
+        session = LookupSession()
+        client = DirectumClient(
+            base_url="https://directum.example",
+            auth=("user", "password"),
+            performer_id=1,
+            session=session,
+        )
+        data = ExtractedData.from_mapping(
+            {
+                "content": "Текст",
+                "correspondent": "ООО Ромашка",
+                "dateFrom": "16.06.2026",
+                "number": "123-4",
+                "signedBy": "Иванов И",
+                "recipient": "Петров П",
+            }
+        )
+
+        result = client.create_incoming_letter(data, [])
+
+        self.assertFalse(result.review_task_created)
+        letter_payloads = [
+            call[2]["json"]
+            for call in session.calls
+            if call[1].endswith("/IIncomingLetters")
+        ]
+        self.assertEqual(len(letter_payloads), 1)
+        self.assertEqual(letter_payloads[0]["InNumber"], "123-4")
+        self.assertEqual(letter_payloads[0]["Dated"], "2026-06-16")
+        self.assertIn("Correspondent@odata.bind", letter_payloads[0])
+        self.assertIn("SignedBy@odata.bind", letter_payloads[0])
+        self.assertIn("Addressee@odata.bind", letter_payloads[0])
+        task_payloads = [
+            call[2]["json"]
+            for call in session.calls
+            if call[1].endswith("/Docflow/CreateSimpleTask")
+        ]
+        self.assertEqual(len(task_payloads), 1)
+        self.assertEqual(task_payloads[0]["text"], SUCCESS_TASK_TEXT)
 
     def test_reports_review_task_creation(self):
         session = FakeSession()
