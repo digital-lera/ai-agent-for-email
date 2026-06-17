@@ -238,7 +238,7 @@ class DirectumClient:
 
         if decision.forward_to:
             if context is None:
-                raise ProcessingError("Forwarding rule matched without message context")
+                raise ProcessingError("Перенаправление письма невозможно: отсутствует контекст сообщения")
             forward_original_email(
                 original_message=context.raw_message,
                 original_subject=context.subject,
@@ -269,7 +269,7 @@ class DirectumClient:
             )
         if data.recipient and recipient_id < 1:
             self.errors.append(f"Адресат '{data.recipient}' не найден.")
-        if data.correspondent and counterparty_id < 1:
+        if data.correspondent and (counterparty_id < 1 or data.correspondent == ""):
             self.errors.append(
                 f"Контрагент '{data.correspondent}' не найден."
             )
@@ -345,10 +345,10 @@ class DirectumClient:
             content = attachment.read_bytes()
         except OSError as exc:
             raise ProcessingError(
-                f"Failed to read attachment {attachment.name}: {exc}"
+                f"Не удалось прочитать вложение {attachment.name}: {exc}"
             ) from exc
         if not content:
-            raise ProcessingError(f"Attachment {attachment.name} is empty")
+            raise ProcessingError(f"Вложение {attachment.name} пустое")
         print(
             f"Размер загружаемого файла {attachment.name}: {len(content)} байт",
             flush=True,

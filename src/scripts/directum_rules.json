@@ -1,7 +1,7 @@
 {
   "rules": [
     {
-      "name": "Do not send KalmykovaRR letters to Directum",
+      "name": "Do not send  daily menu letters to Directum",
       "enabled": true,
       "when": {
         "sender_email": "KalmykovaRR@taif.ru"
@@ -9,7 +9,7 @@
       "actions": [
         {
           "type": "skip_directum",
-          "reason": "Sender is excluded from Directum processing"
+          "reason": "Письмо от данного отправителя не должно обрабатываться в Directum"
         }
       ]
     },
@@ -45,7 +45,7 @@
         },
         {
           "type": "skip_directum",
-          "reason": "Resume or candidate letter is handled by email forwarding"
+          "reason": "Письмо содержит текст резюме или сопроводительного письма, обработка осуществляется пересылкой на указанный адрес"
         }
       ]
     },
@@ -65,7 +65,7 @@
         },
         {
           "type": "skip_directum",
-          "reason": "Resume or candidate letter is handled by email forwarding"
+          "reason": "Письмо содержит вложение с резюме или сопроводительным письмом, обработка осуществляется пересылкой на указанный адрес"
         }
       ]
     }

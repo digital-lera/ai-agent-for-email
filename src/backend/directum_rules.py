@@ -117,7 +117,7 @@ def forward_original_email(
     server = str(config.get("smtp_server", "")).strip()
     if not server:
         raise ProcessingError(
-            "Forwarding rule matched, but smtp_server is not configured in login.json"
+            "Пересылка письма невозможна: не указан SMTP-сервер в конфигурации"
         )
 
     username = str(config.get("smtp_username", config.get("username", "")))
