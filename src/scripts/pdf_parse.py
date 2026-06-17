@@ -44,6 +44,10 @@ def pdf_parse(pdf_files, output_path, config=None):
                     f"PDF {pdf_path.name}: найден встроенный текст, OCR пропущен.",
                     flush=True,
                 )
+                print(
+                    f"Встроенный текст PDF {pdf_path.name}:\n{embedded_text}",
+                    flush=True,
+                )
                 continue
 
             print(
