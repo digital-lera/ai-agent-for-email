@@ -114,11 +114,11 @@ def forward_original_email(
 ) -> None:
     if not recipients:
         return
-    # server = str(config.get("smtp_server", "")).strip()
-    # if not server:
-    #     raise ProcessingError(
-    #         "Пересылка письма невозможна: не указан SMTP-сервер в конфигурации"
-    #     )
+    server = str(config.get("smtp_server", "")).strip()
+    if not server:
+        raise ProcessingError(
+            "Пересылка письма невозможна: не указан SMTP-сервер в конфигурации"
+        )
 
     username = str(config.get("smtp_username", config.get("username", "")))
     password = str(config.get("smtp_password", config.get("email-password", "")))
