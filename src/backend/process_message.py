@@ -104,7 +104,6 @@ def run_chain(socketio, context: MessageContext, config: dict) -> PipelineResult
 
 def _extract_text(state):
     context = state["context"]
-    text_parts = [context.raw_text] if context.raw_text.strip() else []
     if context.pdf_attachments:
         from src.scripts.pdf_parse import pdf_parse
 
@@ -114,7 +113,9 @@ def _extract_text(state):
             flush=True,
         )
         pdf_parse(context.pdf_attachments, pdf_output, state["config"])
-        text_parts.append(pdf_output.read_text(encoding="utf-8"))
+        text_parts = [pdf_output.read_text(encoding="utf-8")]
+    else:
+        text_parts = [context.raw_text] if context.raw_text.strip() else []
     if not text_parts:
         raise ProcessingError("The email contains no readable body or PDF text")
     context.extracted_text_path.write_text(
@@ -141,7 +142,7 @@ def _extract_data(state):
     state["extracted_data"] = process_text_with_ai(
         content,
         context.processed_data_path,
-        [path.name for path in context.attachments],
+        [path.name for path in (context.pdf_attachments or context.attachments)],
     )
 
 

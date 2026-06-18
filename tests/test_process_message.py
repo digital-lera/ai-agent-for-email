@@ -1,10 +1,12 @@
 import tempfile
 import unittest
+import sys
 from pathlib import Path
+from types import ModuleType
 from unittest.mock import patch
 
 from src.backend.models import DirectumResult, ExtractedData, MessageContext
-from src.backend.process_message import run_chain
+from src.backend.process_message import _extract_data, _extract_text, run_chain
 
 
 class FakeSocket:
@@ -16,6 +18,67 @@ class FakeSocket:
 
 
 class PipelineTests(unittest.TestCase):
+    def test_pdf_email_extracts_only_pdf_text(self):
+        with tempfile.TemporaryDirectory() as directory:
+            context = MessageContext(
+                subject="Subject",
+                sender="sender@example.com",
+                message_id="1",
+                root_dir=Path(directory),
+                raw_text="Текст письма и имя отправителя",
+            )
+            context.prepare()
+            pdf = context.work_dir / "letter.pdf"
+            pdf.write_bytes(b"pdf")
+            context.attachments.append(pdf)
+            context.pdf_attachments.append(pdf)
+
+            def write_pdf_text(pdf_files, output_path, config):
+                output_path.write_text("Только текст PDF", encoding="utf-8")
+
+            with patch("src.scripts.pdf_parse.pdf_parse", side_effect=write_pdf_text):
+                _extract_text({"context": context, "config": {}})
+
+            self.assertEqual(
+                context.extracted_text_path.read_text(encoding="utf-8"),
+                "Только текст PDF",
+            )
+
+    def test_pdf_email_sends_only_pdf_attachment_names_to_ai(self):
+        with tempfile.TemporaryDirectory() as directory:
+            context = MessageContext(
+                subject="Subject",
+                sender="sender@example.com",
+                message_id="1",
+                root_dir=Path(directory),
+            )
+            context.prepare()
+            pdf = context.work_dir / "letter.pdf"
+            txt = context.work_dir / "note.txt"
+            context.extracted_text_path.write_text("Только текст PDF", encoding="utf-8")
+            context.attachments.extend([pdf, txt])
+            context.pdf_attachments.append(pdf)
+
+            extracted = ExtractedData.from_mapping({"content": "Текст"})
+            fake_ai_module = ModuleType("src.scripts.ai_output_json")
+            fake_ai_module.process_text_with_ai = unittest.mock.Mock(
+                return_value=extracted
+            )
+
+            with patch.dict(
+                sys.modules,
+                {"src.scripts.ai_output_json": fake_ai_module},
+            ):
+                state = {"context": context}
+                _extract_data(state)
+
+            fake_ai_module.process_text_with_ai.assert_called_once_with(
+                "Только текст PDF",
+                context.processed_data_path,
+                ["letter.pdf"],
+            )
+            self.assertEqual(state["extracted_data"], extracted)
+
     def test_failure_does_not_emit_chain_complete(self):
         socket = FakeSocket()
         with tempfile.TemporaryDirectory() as directory:
