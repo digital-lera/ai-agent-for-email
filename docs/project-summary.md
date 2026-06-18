@@ -73,7 +73,8 @@ TAIF-mail — сервис для автоматической обработк�
 - `statistics.py`: хранит и отправляет дневную статистику.
 - `pdf_parse.py`: извлекает текст из PDF.
 - `ai_output_json.py`: вызывает Ollama и валидирует JSON.
-- `directum.py`: работает с Directum RX OData API.
+- `directum.py`: работает с Directum RX OData API и резервным поиском
+  контрагента через DaData по ИНН.
 - `send_error_task.py`: создает задачу об ошибке в Directum.
 
 ## Ключевые маршруты письма

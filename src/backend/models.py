@@ -12,6 +12,7 @@ from typing import Any
 
 DATE_FORMAT = "%d.%m.%Y"
 NUMBER_PATTERN = re.compile(r"^[0-9-]*$")
+INN_PATTERN = re.compile(r"^(?:[0-9]{10}|[0-9]{12})$")
 PERSON_PATTERN = re.compile(r"^[А-ЯЁA-Z][А-ЯЁа-яёA-Za-z'-]* [А-ЯЁA-Z]$")
 
 
@@ -58,6 +59,7 @@ class MessageContext:
 class ExtractedData:
     content: str
     correspondent: str
+    inn: str
     date_from: str
     number: str
     signed_by: str
@@ -70,6 +72,7 @@ class ExtractedData:
 
         content = str(value.get("content", "") or "").strip()
         correspondent = str(value.get("correspondent", "") or "").strip()
+        inn = _normalize_inn(value.get("inn", ""))
         date_from = str(value.get("dateFrom", "") or "").strip()
         number = str(value.get("number", "") or "").strip()
         signed_by = str(value.get("signedBy", "") or "").strip()
@@ -84,10 +87,15 @@ class ExtractedData:
                 raise ValidationError(
                     f"Дата письма должна быть в формате DD.MM.YYYY: {date_from}"
                 ) from exc
+        if inn and not INN_PATTERN.match(inn):
+            raise ValidationError(
+                f"ИНН должен состоять из 10 или 12 цифр: {inn}"
+            )
 
         return cls(
             content=content,
             correspondent=correspondent,
+            inn=inn,
             date_from=date_from,
             number=number,
             signed_by=signed_by,
@@ -109,11 +117,16 @@ class ExtractedData:
         return {
             "content": self.content,
             "correspondent": self.correspondent,
+            "inn": self.inn,
             "dateFrom": self.date_from,
             "number": self.number,
             "signedBy": self.signed_by,
             "recipient": self.recipient,
         }
+
+
+def _normalize_inn(value: Any) -> str:
+    return re.sub(r"[\s-]+", "", str(value or "")).strip()
 
 
 @dataclass(frozen=True)

@@ -24,6 +24,8 @@
   "ocr_heartbeat_seconds": 15,
   "ocr_model_storage_dir": "/root/.EasyOCR/model",
   "directum_rules_path": "src/scripts/directum_rules.json",
+  "dadata_api_key": "dadata-api-key",
+  "dadata_timeout": 30,
   "smtp_server": "smtp.example",
   "smtp_port": 587,
   "smtp_use_tls": true
@@ -37,6 +39,8 @@
 - SMTP-пересылка по умолчанию использует `username` и `email-password`.
 - SMTP-пересылку можно переопределить через `smtp_username`,
   `smtp_password` и `forward_from`.
+- DaData использует `dadata_api_key` только для резервного поиска
+  контрагента по ИНН.
 
 Разделение сделано специально: учетная запись почтового ящика и учетная запись
 Directum могут быть разными пользователями.
@@ -75,4 +79,6 @@ Directum могут быть разными пользователями.
 - SMTP: `smtplib.SMTP`, обычно с STARTTLS.
 - Ollama: локальный HTTP-сервис через Python-клиент `ollama`.
 - Directum RX: OData endpoint из `odataurl`.
+- DaData.ru: `findById/party` для поиска официального названия компании по
+  ИНН, если контрагент не найден в Directum по названию.
 - OCR: `pdf2image`, EasyOCR, PyTorch и системный PDF renderer.

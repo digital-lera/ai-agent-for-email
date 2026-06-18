@@ -19,6 +19,9 @@ from src.backend.models import DirectumResult, ExtractedData, MessageContext, Pr
 
 
 DEFAULT_TIMEOUT = 30
+DADATA_PARTY_BY_ID_URL = (
+    "https://suggestions.dadata.ru/suggestions/api/4_1/rs/findById/party"
+)
 SUCCESS_TASK_TEXT = (
     "Письмо было обработано успешно, все поля внесены в карточку ИИ-агентом. "
     "Пожалуйста, направьте готовое письмо по маршруту"
@@ -209,6 +212,76 @@ class DirectumClient:
         )
         return matched_id
 
+    def _lookup_counterparty(self, data: ExtractedData) -> tuple[int, str]:
+        counterparty_id = self._lookup("ICounterparties", data.correspondent)
+        if counterparty_id > 0:
+            return counterparty_id, ""
+
+        if not data.inn:
+            return counterparty_id, ""
+
+        dadata_name = self._find_counterparty_name_by_inn(data.inn)
+        if not dadata_name:
+            return counterparty_id, ""
+
+        print(
+            f"DaData вернула название для ИНН {data.inn}: {dadata_name!r}. "
+            "Повторяю поиск контрагента в Directum.",
+            flush=True,
+        )
+        return self._lookup("ICounterparties", dadata_name), dadata_name
+
+    def _find_counterparty_name_by_inn(self, inn: str) -> str:
+        api_key = str(self.config.get("dadata_api_key", "") or "").strip()
+        if not api_key:
+            print("Поиск DaData пропущен: dadata_api_key не указан.", flush=True)
+            return ""
+
+        timeout = int(self.config.get("dadata_timeout", self.timeout))
+        print(f"Поиск контрагента в DaData по ИНН {inn}.", flush=True)
+        try:
+            response = requests.post(
+                str(self.config.get("dadata_party_url", DADATA_PARTY_BY_ID_URL)),
+                headers={
+                    "Authorization": f"Token {api_key}",
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                },
+                json={"query": inn},
+                timeout=timeout,
+            )
+            response.raise_for_status()
+            payload = response.json()
+        except requests.RequestException as exc:
+            print(f"DaData request failed: {exc}", flush=True)
+            return ""
+        except ValueError:
+            print("DaData вернула не-JSON ответ.", flush=True)
+            return ""
+
+        suggestions = (
+            payload.get("suggestions", []) if isinstance(payload, dict) else []
+        )
+        if not suggestions:
+            print(f"DaData не нашла компанию по ИНН {inn}.", flush=True)
+            return ""
+
+        first = suggestions[0]
+        if not isinstance(first, dict):
+            return ""
+        data = first.get("data", {})
+        if not isinstance(data, dict):
+            data = {}
+        name = data.get("name", {})
+        if not isinstance(name, dict):
+            name = {}
+        return str(
+            name.get("short_with_opf")
+            or name.get("full_with_opf")
+            or first.get("value")
+            or ""
+        ).strip()
+
     @staticmethod
     def _lookup_payload(response: requests.Response, entity: str) -> list[dict[str, Any]]:
         try:
@@ -241,7 +314,7 @@ class DirectumClient:
         print("Поиск связанных сущностей Directum...", flush=True)
         signed_by_id = self._lookup("IContacts", data.signed_by, is_person=True)
         recipient_id = self._lookup("IEmployees", data.recipient, is_person=True)
-        counterparty_id = self._lookup("ICounterparties", data.correspondent)
+        counterparty_id, dadata_counterparty_name = self._lookup_counterparty(data)
         ids = DirectumIds(
             signed_by_id=signed_by_id,
             recipient_id=recipient_id,
@@ -311,14 +384,22 @@ class DirectumClient:
         if not data.date_from:
             self.errors.append("Дата письма не распознана.")
 
+        note = (
+            "ДОКУМЕНТ ОБРАБОТАН ИИ-АГЕНТОМ, "
+            "данные необходимо перепроверить"
+        )
+        if dadata_counterparty_name:
+            note = (
+                f"{note}\n"
+                "Контрагент уточнен через DaData по ИНН "
+                f"{data.inn}: {dadata_counterparty_name}"
+            )
+
         payload: dict[str, Any] = {
             "Name": data.content,
             "Subject": data.content,
             "InNumber": data.number,
-            "Note": (
-                "ДОКУМЕНТ ОБРАБОТАН ИИ-АГЕНТОМ, "
-                "данные необходимо перепроверить"
-            ),
+            "Note": note,
         }
         if data.date_from:
             payload["Dated"] = datetime.strptime(

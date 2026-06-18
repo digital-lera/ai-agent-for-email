@@ -2,6 +2,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import requests
 
@@ -63,6 +64,25 @@ class EmptyEmployeeLookupSession(FakeSession):
             return result
         if url.endswith("/ICounterparties"):
             return response({"value": []})
+        if url.endswith("/IIncomingLetters"):
+            return response({"Id": 42})
+        if url.endswith("/Docflow/CreateSimpleTask"):
+            return response(77)
+        return response({})
+
+
+class DadataFallbackLookupSession(FakeSession):
+    def request(self, method, url, **kwargs):
+        self.calls.append((method, url, kwargs))
+        if url.endswith("/IContacts"):
+            return response({"value": []})
+        if url.endswith("/IEmployees"):
+            return response({"value": []})
+        if url.endswith("/ICounterparties"):
+            query = kwargs.get("params", {}).get("$filter", "")
+            if "Р" in query:
+                return response({"value": []})
+            return response({"value": [{"Id": 30, "Name": "ООО Ромашка"}]})
         if url.endswith("/IIncomingLetters"):
             return response({"Id": 42})
         if url.endswith("/Docflow/CreateSimpleTask"):
@@ -272,6 +292,50 @@ class DirectumClientTests(unittest.TestCase):
             if call[1].endswith("/IIncomingLetters")
         ][0]
         self.assertNotIn("Addressee@odata.bind", letter_payload)
+
+    def test_counterparty_lookup_falls_back_to_dadata_inn(self):
+        session = DadataFallbackLookupSession()
+        client = DirectumClient(
+            base_url="https://directum.example",
+            auth=("user", "password"),
+            performer_id=1,
+            session=session,
+            config={"dadata_api_key": "token"},
+        )
+        data = ExtractedData.from_mapping(
+            {
+                "content": "Текст",
+                "correspondent": "Ромашка",
+                "inn": "1655000000",
+                "dateFrom": "16.06.2026",
+                "number": "123-4",
+                "signedBy": "",
+                "recipient": "",
+            }
+        )
+
+        with patch.object(
+            client,
+            "_find_counterparty_name_by_inn",
+            return_value="ООО Ромашка",
+        ) as dadata_lookup:
+            result = client.create_incoming_letter(data, [])
+
+        self.assertTrue(result.review_task_created)
+        dadata_lookup.assert_called_once_with("1655000000")
+        letter_payload = [
+            call[2]["json"]
+            for call in session.calls
+            if call[1].endswith("/IIncomingLetters")
+        ][0]
+        self.assertEqual(
+            letter_payload["Correspondent@odata.bind"],
+            "https://directum.example/ICounterparties(30)",
+        )
+        self.assertIn(
+            "Контрагент уточнен через DaData по ИНН 1655000000: ООО Ромашка",
+            letter_payload["Note"],
+        )
 
     def test_extracts_task_id_from_wrapped_response(self):
         self.assertEqual(

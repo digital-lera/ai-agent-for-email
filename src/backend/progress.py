@@ -27,6 +27,7 @@ def _empty_snapshot() -> dict[str, Any]:
         "data": {
             "content": "",
             "correspondent": "",
+            "inn": "",
             "dateFrom": "",
             "number": "",
             "signedBy": "",

@@ -9,6 +9,7 @@ class ExtractedDataTests(unittest.TestCase):
             {
                 "content": "Краткое содержание",
                 "correspondent": "ООО Тест",
+                "inn": "1655000000",
                 "dateFrom": "15.06.2026",
                 "number": "123-4",
                 "signedBy": "Иванов А",
@@ -17,6 +18,7 @@ class ExtractedDataTests(unittest.TestCase):
         )
 
         self.assertEqual(data.number, "123-4")
+        self.assertEqual(data.inn, "1655000000")
         self.assertEqual(data.to_dict()["dateFrom"], "15.06.2026")
 
     def test_rejects_invalid_date(self):
@@ -25,6 +27,7 @@ class ExtractedDataTests(unittest.TestCase):
                 {
                     "content": "Текст",
                     "correspondent": "",
+                    "inn": "",
                     "dateFrom": "2026-06-15",
                     "number": "",
                     "signedBy": "",
@@ -40,6 +43,7 @@ class ExtractedDataTests(unittest.TestCase):
             {
                 "content": "Текст",
                 "correspondent": "",
+                "inn": "",
                 "dateFrom": "",
                 "number": "",
                 "signedBy": "",
@@ -57,6 +61,7 @@ class ExtractedDataTests(unittest.TestCase):
             {
               "content": "Текст",
               "correspondent": "",
+              "inn": "",
               "dateFrom": "",
               "number": "",
               "signedBy": "",
@@ -65,6 +70,15 @@ class ExtractedDataTests(unittest.TestCase):
             ```"""
         )
         self.assertEqual(data.content, "Текст")
+
+    def test_rejects_invalid_inn(self):
+        with self.assertRaises(ValidationError):
+            ExtractedData.from_mapping(
+                {
+                    "content": "Текст",
+                    "inn": "12345",
+                }
+            )
 
 
 if __name__ == "__main__":

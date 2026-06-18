@@ -65,6 +65,7 @@ AI-извлечение реализовано в `src/scripts/ai_output_json.py
 
 - `content`;
 - `correspondent`;
+- `inn`;
 - `date_from`;
 - `number`;
 - `signed_by`;
@@ -74,13 +75,14 @@ JSON-ключи, ожидаемые от AI:
 
 - `content`;
 - `correspondent`;
+- `inn`;
 - `dateFrom`;
 - `number`;
 - `signedBy`;
 - `recipient`.
 
-`content` обязателен. `dateFrom`, если заполнен, должен быть в формате
-`DD.MM.YYYY`.
+`content` обязателен. `inn`, если заполнен, должен состоять из 10 или 12
+цифр. `dateFrom`, если заполнен, должен быть в формате `DD.MM.YYYY`.
 
 ## Сопровождение промптов
 
@@ -89,7 +91,7 @@ JSON-ключи, ожидаемые от AI:
 При изменении промптов:
 
 1. сохраняйте ожидаемые JSON-ключи;
-2. сохраняйте формат `signedBy` и `recipient`, который подходит для поиска в
+2. сохраняйте формат `inn`, `signedBy` и `recipient`, который подходит для поиска в
    Directum;
 3. проверяйте некорректные и пограничные ответы модели;
 4. запускайте тесты pipeline.

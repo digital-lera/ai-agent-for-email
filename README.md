@@ -35,6 +35,8 @@
   "ocr_heartbeat_seconds": 15,
   "ocr_model_storage_dir": "/root/.EasyOCR/model",
   "directum_rules_path": "src/scripts/directum_rules.json",
+  "dadata_api_key": "dadata-api-key",
+  "dadata_timeout": 30,
   "smtp_server": "smtp.example",
   "smtp_port": 587,
   "smtp_use_tls": true
