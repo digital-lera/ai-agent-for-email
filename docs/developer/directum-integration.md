@@ -70,6 +70,8 @@
 
 - `sender_email`;
 - `sender_contains`;
+- `recipient_email`;
+- `recipient_email_any`;
 - `text_contains_any`;
 - `attachment_name_contains_any`.
 

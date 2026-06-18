@@ -2,6 +2,7 @@ import unittest
 from email.message import EmailMessage
 
 from src.backend.email_check import (
+    _message_recipient_addresses,
     _unique_name,
     decode_filename,
     decode_mime_header,
@@ -31,6 +32,17 @@ class EmailUtilityTests(unittest.TestCase):
         message.add_alternative("<b>html body</b>", subtype="html")
 
         self.assertEqual(read_email_text(message), "plain body")
+
+    def test_extracts_recipient_addresses_from_delivery_headers(self):
+        message = EmailMessage()
+        message["To"] = "Users <mailusers@taif.ru>"
+        message["Cc"] = "Other <other@taif.ru>"
+        message["X-Original-To"] = "original@taif.ru"
+
+        self.assertEqual(
+            _message_recipient_addresses(message),
+            ("mailusers@taif.ru", "other@taif.ru", "original@taif.ru"),
+        )
 
 
 if __name__ == "__main__":

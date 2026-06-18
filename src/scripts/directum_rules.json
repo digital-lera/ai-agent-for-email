@@ -14,6 +14,19 @@
       ]
     },
     {
+      "name": "Skip mailusers recipient letters",
+      "enabled": true,
+      "when": {
+        "recipient_email": "mailusers@taif.ru"
+      },
+      "actions": [
+        {
+          "type": "skip_directum",
+          "reason": "Письмо адресовано mailusers@taif.ru и не должно обрабатываться"
+        }
+      ]
+    },
+    {
       "name": "Replace Directum person id 807 with 582",
       "enabled": true,
       "when": {

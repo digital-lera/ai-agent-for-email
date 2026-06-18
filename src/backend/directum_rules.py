@@ -76,8 +76,14 @@ def apply_email_rules(
     subject: str = "",
     body: str = "",
     attachment_names: tuple[str, ...] = (),
+    recipient_addresses: tuple[str, ...] = (),
 ) -> RuleDecision:
     sender_email = _email_address(sender)
+    recipient_emails = tuple(
+        email
+        for address in recipient_addresses
+        if (email := _email_address(address))
+    )
     searchable_text = f"{subject}\n{body}"
     decision = _MutableDecision()
     for rule in rules:
@@ -86,6 +92,7 @@ def apply_email_rules(
             when,
             sender=sender,
             sender_email=sender_email,
+            recipient_emails=recipient_emails,
             searchable_text=searchable_text,
             attachment_names=attachment_names,
         ):
@@ -244,12 +251,15 @@ def _matches_email(
     *,
     sender: str,
     sender_email: str,
+    recipient_emails: tuple[str, ...],
     searchable_text: str,
     attachment_names: tuple[str, ...],
 ) -> bool:
     supported_keys = {
         "sender_email",
         "sender_contains",
+        "recipient_email",
+        "recipient_email_any",
         "text_contains_any",
         "attachment_name_contains_any",
     }
@@ -258,6 +268,13 @@ def _matches_email(
     if "sender_email" in when and sender_email != str(when["sender_email"]).casefold():
         return False
     if "sender_contains" in when and str(when["sender_contains"]).casefold() not in sender.casefold():
+        return False
+    if "recipient_email" in when and str(when["recipient_email"]).casefold() not in recipient_emails:
+        return False
+    if "recipient_email_any" in when and not _recipient_email_any(
+        recipient_emails,
+        when["recipient_email_any"],
+    ):
         return False
     if "text_contains_any" in when and not _contains_any(
         searchable_text,
@@ -298,6 +315,12 @@ def _is_fuzzy_match(value: str, term: str) -> bool:
 
 def _attachment_name_contains_any(names: tuple[str, ...], needles: Any) -> bool:
     return any(_contains_any(Path(name).stem, needles) for name in names)
+
+
+def _recipient_email_any(recipient_emails: tuple[str, ...], needles: Any) -> bool:
+    terms = needles if isinstance(needles, list) else [needles]
+    normalized_terms = {str(term).casefold() for term in terms}
+    return any(email in normalized_terms for email in recipient_emails)
 
 
 def _matches_ids(when: dict[str, Any], ids: DirectumIds) -> bool:

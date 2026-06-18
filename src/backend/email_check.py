@@ -6,6 +6,7 @@ import json
 import re
 from email.header import decode_header, make_header
 from email.message import Message
+from email.utils import getaddresses
 from pathlib import Path
 from typing import Any
 
@@ -173,6 +174,7 @@ def _process_one_message(
             subject=subject,
             body=context.raw_text,
             attachment_names=_message_attachment_names(message),
+            recipient_addresses=_message_recipient_addresses(message),
         )
         if email_decision.forward_to:
             forward_original_email(
@@ -376,6 +378,24 @@ def _message_attachment_names(message: Message) -> tuple[str, ...]:
         decode_filename(file_name)
         for part in message.walk()
         if (file_name := part.get_filename())
+    )
+
+
+def _message_recipient_addresses(message: Message) -> tuple[str, ...]:
+    headers = (
+        "to",
+        "cc",
+        "delivered-to",
+        "x-original-to",
+        "envelope-to",
+    )
+    values = []
+    for header in headers:
+        values.extend(message.get_all(header, []))
+    return tuple(
+        address.casefold()
+        for _, address in getaddresses(values)
+        if address
     )
 
 

@@ -121,6 +121,29 @@ class DirectumRuleTests(unittest.TestCase):
         self.assertTrue(decision.skip_directum)
         self.assertEqual(decision.forward_to, ("MikhelAA@taif.ru",))
 
+    def test_email_rule_matches_original_recipient_address(self):
+        rules = [
+            {
+                "name": "skip mailusers",
+                "when": {"recipient_email": "mailusers@taif.ru"},
+                "actions": [
+                    {
+                        "type": "skip_directum",
+                        "reason": "mailusers",
+                    }
+                ],
+            }
+        ]
+
+        decision = apply_email_rules(
+            rules,
+            sender="sender@example.com",
+            recipient_addresses=("Some User <mailusers@taif.ru>",),
+        )
+
+        self.assertTrue(decision.skip_directum)
+        self.assertEqual(decision.reason, "mailusers")
+
     def test_any_id_rule_replaces_only_matching_fields(self):
         rules = [
             {

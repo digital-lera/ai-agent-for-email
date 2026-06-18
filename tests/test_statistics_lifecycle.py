@@ -58,6 +58,16 @@ def resume_email():
     return message.as_bytes()
 
 
+def mailusers_email():
+    message = EmailMessage()
+    message["Subject"] = "Mailusers test"
+    message["From"] = "sender@example.com"
+    message["To"] = "Mail Users <mailusers@taif.ru>"
+    message["Message-ID"] = "<mailusers-test@example.com>"
+    message.set_content("Добрый день.")
+    return message.as_bytes()
+
+
 class StatisticsLifecycleTests(unittest.TestCase):
     def run_message(self, pipeline_result, error_task_error=None):
         counters = []
@@ -200,6 +210,57 @@ class StatisticsLifecycleTests(unittest.TestCase):
 
         run_chain.assert_not_called()
         forward_original_email.assert_called_once()
+        self.assertEqual([counter for counter, _ in counters], ["received", "successful"])
+
+    def test_mailusers_recipient_rule_skips_pipeline(self):
+        counters = []
+        socket = FakeSocket()
+        imap = FakeImap(mailusers_email())
+
+        def record_counter(socketio, counter, message_id):
+            counters.append((counter, message_id))
+
+        with tempfile.TemporaryDirectory() as directory:
+            rules_path = Path(directory) / "rules.json"
+            rules_path.write_text(
+                json.dumps(
+                    {
+                        "rules": [
+                            {
+                                "name": "skip mailusers",
+                                "when": {"recipient_email": "mailusers@taif.ru"},
+                                "actions": [
+                                    {
+                                        "type": "skip_directum",
+                                        "reason": "mailusers",
+                                    }
+                                ],
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with (
+                patch("src.backend.email_check.JOBS_DIR", Path(directory)),
+                patch("src.backend.process_message.run_chain") as run_chain,
+                patch(
+                    "src.backend.email_check.increment_and_emit",
+                    side_effect=record_counter,
+                ),
+                patch("src.backend.email_check._move_to_processed"),
+            ):
+                _process_one_message(
+                    imap,
+                    b"1",
+                    socket,
+                    {
+                        "max_attachment_bytes": 1024,
+                        "directum_rules_path": str(rules_path),
+                    },
+                )
+
+        run_chain.assert_not_called()
         self.assertEqual([counter for counter, _ in counters], ["received", "successful"])
 
 
