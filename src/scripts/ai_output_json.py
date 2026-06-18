@@ -61,9 +61,10 @@ def process_text_with_ai(email_content, output_path, attachment_names=()):
         )
         response = client.generate(
             model=MODEL_NAME,
-            prompt=(
-                f"{preprocessing_prompt}\n\n"
-                f"ИМЕНА ВЛОЖЕНИЙ:\n{filenames}\n\n"
+            prompt=_build_preprocessing_request(
+                preprocessing_prompt,
+                email_content,
+                filenames,
             ),
             options={"temperature": 0.2, "thinking": False, "num_ctx": 40960},
         )
@@ -97,6 +98,17 @@ def process_text_with_ai(email_content, output_path, attachment_names=()):
 
 def process_raw_email_text(email_content, output_path):
     return process_text_with_ai(email_content, output_path)
+
+
+def _build_preprocessing_request(preprocessing_prompt, email_content, filenames):
+    return (
+        f"{preprocessing_prompt}\n\n"
+        f"ИМЕНА ВЛОЖЕНИЙ:\n{filenames}\n\n"
+        "ТЕКСТ ПИСЬМА:\n"
+        "<<<BEGIN_EMAIL>>>\n"
+        f"{email_content}\n"
+        "<<<END_EMAIL>>>"
+    )
 
 
 def _response_text(response):
