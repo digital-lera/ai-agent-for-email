@@ -27,6 +27,45 @@
       ]
     },
     {
+      "name": "Skip scan",
+      "enabled": true,
+      "when": {
+        "sender_email": "scan@taif.ru"
+      },
+      "actions": [
+        {
+          "type": "skip_directum",
+          "reason": "Письмо  пришло со сканера и не должно обрабатываться"
+        }
+      ]
+    },
+    {
+      "name": "Skip gosuslugi",
+      "enabled": true,
+      "when": {
+        "sender_email": "no-reply@gosuslugi.ru"
+      },
+      "actions": [
+        {
+          "type": "skip_directum",
+          "reason": "Письмо пришло с госуслуг"
+        }
+      ]
+    },
+    {
+      "name": "Skip self response",
+      "enabled": true,
+      "when": {
+        "sender_email": "bars@taif.ru"
+      },
+      "actions": [
+        {
+          "type": "skip_directum",
+          "reason": "Письмо пришло с Барса"
+        }
+      ]
+    },
+    {
       "name": "Replace Directum person id 807 with 582",
       "enabled": true,
       "when": {
