@@ -210,6 +210,7 @@ def _process_one_message(
             emit_progress(socketio)
             increment_and_emit(socketio, "received", context.message_id)
             increment_and_emit(socketio, "successful", context.message_id)
+            _mark_for_manual_processing(imap, message_number)
             statistics_tracked = True
         else:
             if email_decision.forward_to:
