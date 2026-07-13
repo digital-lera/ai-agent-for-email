@@ -6,6 +6,8 @@ from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any
 import warnings
+import numpy as np
+import pandas as pd
 
 import requests
 
@@ -528,8 +530,8 @@ class DirectumClient:
             {
                 "assignmentType": "Assignment",
                 "deadline": (
-                    datetime.now().astimezone() + timedelta(days=1)
-                ).isoformat(),
+                    pd.Timestamp.now(tz=datetime.now().astimezone().tzinfo) + pd.offsets.BusinessDay(2))
+                .isoformat(),
                 "subject": "Входящее письмо обработано успешно.",
                 "importance": "Normal",
                 "text": SUCCESS_TASK_TEXT,
