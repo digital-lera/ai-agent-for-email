@@ -505,10 +505,8 @@ class DirectumClient:
             relation_response = self._request(
                 "POST",
                 f"/IElectronicDocuments",
-                headers={"Return": "representation"},
                 json={
-                    "Note": f"Приложение {attachment.name}",
-                    "AssociatedApplication": {"Id": 3},
+                    "Name": f"Приложение {attachment.name}",
                 },
             )
             relation_response.raise_for_status()
