@@ -513,7 +513,7 @@ class DirectumClient:
             attachment_doc = relation_response.json()
             attachment_doc_id = -1 
             try:
-                attachment_doc_id = int(attachment_doc.["Id"])
+                attachment_doc_id = int(attachment_doc["Id"])
             except (KeyError, TypeError, ValueError) as exc:
                 print("No version ID")
 
