@@ -523,8 +523,10 @@ class DirectumClient:
                 },
             )
             version_id = -1
-            if int(version_response.json()["Id"]):
+            try:
                 version_id = int(version_response.json()["Id"])
+            except (KeyError, TypeError, ValueError) as exc:
+                print("No version ID")
 
             self._request(
                 "PUT",
