@@ -511,7 +511,11 @@ class DirectumClient:
             )
             relation_response.raise_for_status()
             attachment_doc = relation_response.json()
-            attachment_doc_id = attachment_doc["id"]
+            attachment_doc_id = -1
+            try:
+                attachment_doc_id = int(attachment_doc.json()["Id"])
+            except (KeyError, TypeError, ValueError) as exc:
+                print("No version ID")
 
             version_response = self._request(
                 "POST",
