@@ -522,12 +522,9 @@ class DirectumClient:
                     "AssociatedApplication": {"Id": 3},
                 },
             )
-            try:
+            version_id = -1
+            if int(version_response.json()["Id"]):
                 version_id = int(version_response.json()["Id"])
-            except (KeyError, TypeError, ValueError) as exc:
-                raise ProcessingError(
-                    f"Directum did not return a version ID for {attachment.name}"
-                ) from exc
 
             self._request(
                 "PUT",
