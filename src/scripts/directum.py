@@ -430,8 +430,10 @@ class DirectumClient:
 
         print(f"Входящее письмо создано, id={document_id}", flush=True)
         print(f"Файлов для загрузки в Directum: {len(attachments)}", flush=True)
+        self._upload_attachment(document_id, attachments[0], True)
+        attachments.pop(0)
         for attachment in attachments:
-            self._upload_attachment(document_id, attachment)
+            self._upload_attachment(document_id, attachment, False)
 
         review_task_created = bool(self.errors)
         if review_task_created:
@@ -454,7 +456,7 @@ class DirectumClient:
             review_task_created=review_task_created,
         )
 
-    def _upload_attachment(self, document_id: int, attachment: Path) -> None:
+    def _upload_attachment(self, document_id: int, attachment: Path, is_main: bool = True) -> None:
         print(f"Подготовка файла к загрузке: {attachment.name}", flush=True)
         try:
             content = attachment.read_bytes()
@@ -469,35 +471,40 @@ class DirectumClient:
             flush=True,
         )
 
-        version_response = self._request(
-            "POST",
-            f"/IIncomingLetters({document_id})/Versions",
-            headers={"Return": "representation"},
-            json={
-                "Note": f"Файл, приложенный к письму: {attachment.name}",
-                "AssociatedApplication": {"Id": 3},
-            },
-        )
-        try:
-            version_id = int(version_response.json()["Id"])
-        except (KeyError, TypeError, ValueError) as exc:
-            raise ProcessingError(
-                f"Directum did not return a version ID for {attachment.name}"
-            ) from exc
+        if is_main:
 
-        self._request(
-            "PUT",
-            (
-                f"/IIncomingLetters({document_id})/Versions"
-                f"({version_id})/Body/$value"
-            ),
-            headers={
-                "Content-Type": "application/octet-stream",
-                "Accept": "application/json",
-            },
-            data=content,
-        )
+            version_response = self._request(
+                "POST",
+                f"/IIncomingLetters({document_id})/Versions",
+                headers={"Return": "representation"},
+                json={
+                    "Note": f"Файл, приложенный к письму: {attachment.name}",
+                    "AssociatedApplication": {"Id": 3},
+                },
+            )
+            try:
+                version_id = int(version_response.json()["Id"])
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ProcessingError(
+                    f"Directum did not return a version ID for {attachment.name}"
+                ) from exc
+
+            self._request(
+                "PUT",
+                (
+                    f"/IIncomingLetters({document_id})/Versions"
+                    f"({version_id})/Body/$value"
+                ),
+                headers={
+                    "Content-Type": "application/octet-stream",
+                    "Accept": "application/json",
+                },
+                data=content,
+            )
+            
+
         print(f"Файл {attachment.name} загружен в Directum.", flush=True)
+        
 
     def _create_review_task(self, document_id: int) -> None:
         print(f"Создание задачи проверки для документа {document_id}.", flush=True)
