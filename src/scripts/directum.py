@@ -501,7 +501,61 @@ class DirectumClient:
                 },
                 data=content,
             )
-            
+        else:
+            relation_response = self._request(
+                "POST",
+                f"/IElectronicDocuments",
+                headers={"Return": "representation"},
+                json={
+                    "Note": f"Приложение {attachment.name}",
+                    "AssociatedApplication": {"Id": 3},
+                },
+            )
+            relation_response.raise_for_status()
+            attachment_doc = relation_response.json()
+            attachment_doc_id = attachment_doc["id"]
+
+            version_response = self._request(
+                "POST",
+                f"/IElectronicDocuments({attachment_doc_id})/Versions",
+                headers={"Return": "representation"},
+                json={
+                    "Note": f"Приложение {attachment.name}",
+                    "AssociatedApplication": {"Id": 3},
+                },
+            )
+            try:
+                version_id = int(version_response.json()["Id"])
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ProcessingError(
+                    f"Directum did not return a version ID for {attachment.name}"
+                ) from exc
+
+            self._request(
+                "PUT",
+                (
+                    f"/IElectronicDocuments({attachment_doc_id})/Versions"
+                    f"({version_id})/Body/$value"
+                ),
+                headers={
+                    "Content-Type": "application/octet-stream",
+                    "Accept": "application/json",
+                },
+                data=content,
+            )
+
+            payload = {
+                "relationName": attachment.name,
+                "baseDocumentId": document_id,
+                "relationDocumentId": attachment_doc_id,
+            }
+
+            resp = self._request(
+                "POST",
+                f"/DocflowApproval/AddRelations",
+                json=payload,
+            )
+            resp.raise_for_status()
 
         print(f"Файл {attachment.name} загружен в Directum.", flush=True)
         
