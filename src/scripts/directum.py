@@ -511,9 +511,9 @@ class DirectumClient:
             )
             relation_response.raise_for_status()
             attachment_doc = relation_response.json()
-            attachment_doc_id = -1
+            attachment_doc_id = -1 
             try:
-                attachment_doc_id = int(attachment_doc.json()["Id"])
+                attachment_doc_id = int(attachment_doc.["Id"])
             except (KeyError, TypeError, ValueError) as exc:
                 print("No version ID")
 
@@ -526,9 +526,11 @@ class DirectumClient:
                     "AssociatedApplication": {"Id": 3},
                 },
             )
+
+            version_data = version_response.json()
             version_id = -1
             try:
-                version_id = int(version_response.json()["Id"])
+                version_id = int(version_data["Id"])
             except (KeyError, TypeError, ValueError) as exc:
                 print("No version ID")
 
