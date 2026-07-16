@@ -555,7 +555,12 @@ class DirectumClient:
 
             resp = self._request(
                 "POST",
-                f"/DocflowApproval/AddRelations",
+                "/Docflow/AddRelations",
+                headers = {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "Return": "representation",
+                },
                 json=payload,
             )
             resp.raise_for_status()
