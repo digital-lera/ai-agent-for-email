@@ -504,7 +504,7 @@ class DirectumClient:
         else:
             relation_response = self._request(
                 "POST",
-                f"/IElectronicDocuments",
+                f"/ISimpleDocuments",
                 json={
                     "Name": f"Приложение {attachment.name}",
                 },
@@ -515,7 +515,7 @@ class DirectumClient:
 
             version_response = self._request(
                 "POST",
-                f"/IElectronicDocuments({attachment_doc_id})/Versions",
+                f"/ISimpleDocuments({attachment_doc_id})/Versions",
                 headers={"Return": "representation"},
                 json={
                     "Note": f"Приложение {attachment.name}",
@@ -529,7 +529,7 @@ class DirectumClient:
             self._request(
                 "PUT",
                 (
-                    f"/IElectronicDocuments({attachment_doc_id})/Versions"
+                    f"/ISimpleDocuments({attachment_doc_id})/Versions"
                     f"({version_id})/Body/$value"
                 ),
                 headers={
