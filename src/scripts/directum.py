@@ -553,14 +553,16 @@ class DirectumClient:
                 "relationDocumentId": attachment_doc_id,
             }
 
+            headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Return": "representation",
+            }   
+
             resp = self._request(
                 "POST",
                 "/Docflow/AddRelations",
-                headers = {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                    "Return": "representation",
-                },
+                headers = headers,
                 json=payload,
             )
             resp.raise_for_status()
