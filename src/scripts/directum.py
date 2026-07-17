@@ -556,7 +556,6 @@ class DirectumClient:
             headers = {
             "Content-Type": "application/json",
             "Accept": "application/json",
-            "Return": "representation",
             }   
 
             resp = self._request(
