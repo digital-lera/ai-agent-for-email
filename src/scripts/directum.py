@@ -548,7 +548,7 @@ class DirectumClient:
             )
 
             payload = {
-                "relationName": attachment.name,
+                "relationName": "Addendum",
                 "baseDocumentId": document_id,
                 "relationDocumentId": attachment_doc_id,
             }
