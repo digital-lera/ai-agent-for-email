@@ -40,13 +40,63 @@
       ]
     },
     {
-      "name": "Skip gosuslugi",
+      "name": "Forward gosuslugi penalty for traffic violations",
       "enabled": true,
       "when": {
-        "sender_email": "no-reply@gosuslugi.ru"
+        "sender_email": "StryginaVM@taif.ru",
+        "text_contains_any": [
+          "транспорт",
+          "пдд",
+          "гибдд"
+        ]
       },
       "actions": [
         {
+          "type": "forward_email",
+          "to": "StryginaVM@taif.ru"
+        },
+        {
+          
+          "type": "skip_directum",
+          "reason": "Письмо пришло с госуслуг и содержит информацию о штрафах"
+        }
+      ]
+    },
+    {
+      "name": "Forward gosuslugi court proceedings",
+      "enabled": true,
+      "when": {
+        "sender_email": "StryginaVM@taif.ru",
+        "text_contains_any": [
+          "Постановление приставов",
+          "Исполнительное производство"
+        ]
+      },
+      "actions": [
+        {
+          "type": "forward_email",
+          "to": "StryginaVM@taif.ru"
+        },
+        {
+          
+          "type": "skip_directum",
+          "reason": "Письмо пришло с госуслуг и содержит информацию о судебных постановлениях"
+        }
+      ]
+    },
+    {
+      "name": "Forward gosuslugi general notifications",
+      "enabled": true,
+      "when": {
+        "sender_email": "StryginaVM@taif.ru"
+      },
+      "actions": [
+        {
+          "type": "forward_email",
+          "to": "StryginaVM@taif.ru"
+        },
+        {
+          
           "type": "skip_directum",
           "reason": "Письмо пришло с госуслуг"
         }
@@ -75,23 +125,6 @@
         {
           "type": "replace_matched_id",
           "id": 582
-        }
-      ]
-    },
-    {
-      "name": "Forward recipient 1564 to reception",
-      "enabled": true,
-      "when": {
-        "recipient_id": 1564
-      },
-      "actions": [
-        {
-          "type": "forward_email",
-          "to": "StryginaVM@taif.ru"
-        },
-        {
-          "type": "skip_directum",
-          "reason": "Письмо переслано в приёмную получателя: Стрыгина Валерия"
         }
       ]
     },
