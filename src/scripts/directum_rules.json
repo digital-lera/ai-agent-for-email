@@ -40,10 +40,28 @@
       ]
     },
     {
+      "name": "Forward self",
+      "enabled": true,
+      "when": {
+        "sender_email": "StryginaVM@taif.ru"
+      },
+      "actions": [
+        {
+          "type": "forward_email",
+          "to": "StryginaVM@taif.ru"
+        },
+        {
+          
+          "type": "skip_directum",
+          "reason": "Письмо тестовое"
+        }
+      ]
+    },
+    {
       "name": "Forward gosuslugi penalty for traffic violations",
       "enabled": true,
       "when": {
-        "sender_email": "StryginaVM@taif.ru",
+        "sender_email": "no-reply@gosuslugi.ru",
         "text_contains_any": [
           "транспорт",
           "пдд",
@@ -53,7 +71,7 @@
       "actions": [
         {
           "type": "forward_email",
-          "to": "StryginaVM@taif.ru"
+          "to": "mukhamedyarovrf@taif.ru"
         },
         {
           
@@ -66,7 +84,7 @@
       "name": "Forward gosuslugi court proceedings",
       "enabled": true,
       "when": {
-        "sender_email": "StryginaVM@taif.ru",
+        "sender_email": "no-reply@gosuslugi.ru",
         "text_contains_any": [
           "Постановление приставов",
           "Исполнительное производство"
@@ -75,7 +93,19 @@
       "actions": [
         {
           "type": "forward_email",
-          "to": "StryginaVM@taif.ru"
+          "to": "KhristoforovaAI@taif.ru"
+        },
+        {
+          "type": "forward_email",
+          "to": "ValeevaGA@taif.ru"
+        },
+        {
+          "type": "forward_email",
+          "to": "arzamastsevav@taif.ru"
+        },
+        {
+          "type": "forward_email",
+          "to": "FedotovaLA@taif.ru"
         },
         {
           
@@ -88,12 +118,12 @@
       "name": " __default__ Forward gosuslugi",
       "enabled": true,
       "when": {
-        "sender_email": "StryginaVM@taif.ru"
+        "sender_email": "no-reply@gosuslugi.ru"
       },
       "actions": [
         {
           "type": "forward_email",
-          "to": "StryginaVM@taif.ru"
+          "to": "ValeevaGA@taif.ru"
         },
         {
           

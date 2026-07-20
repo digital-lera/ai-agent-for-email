@@ -187,7 +187,7 @@ def _process_one_message(
         if email_decision.skip_directum:
             if email_decision.forward_to:
                 print(
-                    "Письмо перенаправлено по правилу: "
+                    "Письмо перенаправлено на ящик "
                     f"{', '.join(email_decision.forward_to)}",
                     flush=True,
                 )

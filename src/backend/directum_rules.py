@@ -111,6 +111,11 @@ def apply_id_rules(rules: list[dict[str, Any]], ids: DirectumIds) -> RuleDecisio
     return decision.freeze()
 
 
+from email import policy
+from email.parser import BytesParser
+from email.message import EmailMessage
+
+
 def forward_original_email(
     *,
     original_message: bytes,
@@ -121,6 +126,7 @@ def forward_original_email(
 ) -> None:
     if not recipients:
         return
+
     server = str(config.get("smtp_server", "")).strip()
     if not server:
         raise ProcessingError(
@@ -133,28 +139,50 @@ def forward_original_email(
     port = int(config.get("smtp_port", 587))
     use_tls = bool(config.get("smtp_use_tls", True))
 
-    message = EmailMessage()
-    message["From"] = from_address
-    message["To"] = ", ".join(recipients)
-    message["Subject"] = f"Fwd: {original_subject}"
-    message.set_content(
+    original = BytesParser(policy=policy.default).parsebytes(original_message)
+
+    fwd = EmailMessage()
+    fwd["From"] = from_address
+    fwd["To"] = ", ".join(recipients)
+    fwd["Subject"] = f"Fwd: {original.get('Subject', original_subject)}"
+
+    original_text = original.get_body(preferencelist=("plain", "html"))
+    original_payload = original_text.get_content() if original_text else ""
+
+    prefix = (
         "Письмо было автоматически перенаправлено правилом обработки.\n"
-        f"Исходный отправитель: {sender}\n"
-    )
-    message.add_attachment(
-        original_message,
-        maintype="application",
-        subtype="octet-stream",
-        filename="original.eml",
+        f"Исходный отправитель: {sender}\n\n"
     )
 
+    if original.get_body(preferencelist=("html",)):
+        
+        fwd.set_content(prefix + (original.get_body(preferencelist=("plain",)) or original_text).get_content())
+        fwd.add_alternative(
+            f"<p>{prefix.replace('\n', '<br>')}</p>\n" +
+            original.get_body(preferencelist=("html",)).get_content(),
+            subtype="html",
+        )
+    else:
+        # только текст
+        fwd.set_content(prefix + original_payload)
+
+    # 4. Копируем вложения
+    for attachment in original.iter_attachments():
+        fwd.add_attachment(
+            attachment.get_content(),
+            maintype=attachment.get_content_maintype(),
+            subtype=attachment.get_content_subtype(),
+            filename=attachment.get_filename(),
+        )
+
+    # 5. Отправляем по SMTP
     try:
         with smtplib.SMTP(server, port, timeout=int(config.get("smtp_timeout", 30))) as smtp:
             if use_tls:
                 smtp.starttls()
             if username and password:
                 smtp.login(username, password)
-            smtp.send_message(message)
+            smtp.send_message(fwd)
     except (OSError, smtplib.SMTPException) as exc:
         raise ProcessingError(f"Failed to forward email to {recipients}: {exc}") from exc
 

@@ -348,6 +348,12 @@ class DirectumClient:
                 f"Письмо перенаправлено по правилу: {', '.join(decision.forward_to)}",
                 flush=True,
             )
+            return DirectumResult(
+                document_id=None,
+                review_task_created=False,
+                skipped_directum=True,
+                forwarded_to_recipient=True,
+            )
 
         if decision.skip_directum:
             print(
