@@ -157,9 +157,13 @@ def forward_original_email(
     if original.get_body(preferencelist=("html",)):
         
         fwd.set_content(prefix + (original.get_body(preferencelist=("plain",)) or original_text).get_content())
+        html_prefix = prefix.replace("\n", "<br>")
+
         fwd.add_alternative(
-            f"<p>{prefix.replace('\n', '<br>')}</p>\n" +
-            original.get_body(preferencelist=("html",)).get_content(),
+            "<p>{}</p>\n{}".format(
+                html_prefix,
+                original.get_body(preferencelist=("html",)).get_content(),
+            ),
             subtype="html",
         )
     else:
