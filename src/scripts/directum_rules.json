@@ -79,6 +79,23 @@
       ]
     },
     {
+      "name": "Forward recipient 1564 to reception",
+      "enabled": true,
+      "when": {
+        "recipient_id": 1564
+      },
+      "actions": [
+        {
+          "type": "forward_email",
+          "to": "StryginaVM@taif.ru"
+        },
+        {
+          "type": "skip_directum",
+          "reason": "Письмо переслано в приёмную получателя: Стрыгина Валерия"
+        }
+      ]
+    },
+    {
       "name": "Forward recipient 1342 to reception",
       "enabled": true,
       "when": {
