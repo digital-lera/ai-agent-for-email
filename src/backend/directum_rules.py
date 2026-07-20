@@ -265,6 +265,11 @@ def _matches_email(
     }
     if not any(key in when for key in supported_keys):
         return False
+    if "text_contains_any" in when and not _contains_any(
+        searchable_text,
+        when["text_contains_any"],
+    ):
+        return False
     if "sender_email" in when and sender_email != str(when["sender_email"]).casefold():
         return False
     if "sender_contains" in when and str(when["sender_contains"]).casefold() not in sender.casefold():
@@ -276,11 +281,7 @@ def _matches_email(
         when["recipient_email_any"],
     ):
         return False
-    if "text_contains_any" in when and not _contains_any(
-        searchable_text,
-        when["text_contains_any"],
-    ):
-        return False
+    
     if "attachment_name_contains_any" in when and not _attachment_name_contains_any(
         attachment_names,
         when["attachment_name_contains_any"],
