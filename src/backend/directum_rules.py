@@ -193,6 +193,9 @@ def _apply_actions(
     if not isinstance(actions, list):
         raise ProcessingError(f"Rule {rule.get('name', '<unnamed>')} has invalid actions")
 
+    if "__default__" in rule.get("name")  and len(decision.matched_rules) > 1:
+        return
+
     for action in actions:
         if not isinstance(action, dict):
             continue

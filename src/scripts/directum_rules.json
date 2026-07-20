@@ -85,7 +85,7 @@
       ]
     },
     {
-      "name": "Forward gosuslugi general notifications",
+      "name": " __default__ Forward gosuslugi",
       "enabled": true,
       "when": {
         "sender_email": "StryginaVM@taif.ru"
