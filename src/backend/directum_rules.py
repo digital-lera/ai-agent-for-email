@@ -192,7 +192,7 @@ def forward_original_email(
     except (OSError, smtplib.SMTPException) as exc:
         raise ProcessingError(f"Failed to forward email to {recipients}: {exc}") from exc
     
-    append_to_sent(fwd, config)
+    append_to_sent(sent_message=fwd, config=config)
 
 def append_to_sent(
     *,
