@@ -9,11 +9,16 @@ from email.message import EmailMessage
 from email.utils import getaddresses, parseaddr
 from pathlib import Path
 from typing import Any
+import imaplib
+from email.generator import BytesGenerator
+from io import BytesIO
+import time
 
 from src.backend.models import ProcessingError
 
 
 DEFAULT_RULES_PATH = Path(__file__).resolve().parent.parent / "scripts" / "directum_rules.json"
+DEFAULT_IMAP_SERVER = "ukexch.uktaif.ru"
 
 
 @dataclass(frozen=True)
@@ -186,7 +191,37 @@ def forward_original_email(
             smtp.send_message(fwd)
     except (OSError, smtplib.SMTPException) as exc:
         raise ProcessingError(f"Failed to forward email to {recipients}: {exc}") from exc
+    
+    append_to_sent(fwd, config)
 
+def append_to_sent(
+    *,
+    sent_message: EmailMessage,
+    config: dict[str, Any],
+    sent_folder: str = "Sent",
+    use_ssl: bool = True,
+) -> None:
+    buf = BytesIO()
+    BytesGenerator(buf).flatten(sent_message)
+    try:
+        username = str(config["username"])
+        password = str(config["email-password"])
+    except KeyError as exc:
+        raise ProcessingError(f"Missing email configuration field: {exc}") from exc
+
+    imap_server = str(config.get("imap_server", DEFAULT_IMAP_SERVER))
+    raw = buf.getvalue()
+
+    if use_ssl:
+        imap = imaplib.IMAP4_SSL(imap_server)
+    else:
+        imap = imaplib.IMAP4(imap_server)
+
+    try:
+        imap.login(username, password)
+        imap.append(sent_folder, "\\Seen", imaplib.Time2Internaldate(time.time()), raw)
+    finally:
+        imap.logout()
 
 @dataclass
 class _MutableDecision:
