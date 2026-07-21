@@ -167,10 +167,8 @@ def forward_original_email(
             subtype="html",
         )
     else:
-        # только текст
         fwd.set_content(prefix + original_payload)
 
-    # 4. Копируем вложения
     for attachment in original.iter_attachments():
         fwd.add_attachment(
             attachment.get_content(),
@@ -179,7 +177,6 @@ def forward_original_email(
             filename=attachment.get_filename(),
         )
 
-    # 5. Отправляем по SMTP
     try:
         with smtplib.SMTP(server, port, timeout=int(config.get("smtp_timeout", 30))) as smtp:
             if use_tls:

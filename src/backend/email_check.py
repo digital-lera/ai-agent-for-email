@@ -93,6 +93,8 @@ def check_email(socketio) -> int:
         message_ids = data[0].split() if data and data[0] else []
         print(f"Найдено непрочитанных сообщений: {len(message_ids)}", flush=True)
 
+        imap.list()
+
         for message_number in message_ids:
             try:
                 _process_one_message(imap, message_number, socketio, config)
