@@ -88,9 +88,7 @@ class ExtractedData:
                     f"Дата письма должна быть в формате DD.MM.YYYY: {date_from}"
                 ) from exc
         if inn and not INN_PATTERN.match(inn):
-            raise ValidationError(
-                f"ИНН должен состоять из 10 или 12 цифр: {inn}"
-            )
+            inn = ""
 
         return cls(
             content=content,
