@@ -104,46 +104,24 @@ class DirectumClient:
             raise ProcessingError(f"Invalid Directum configuration: {exc}") from exc
 
     def _request(self, method: str, path: str, **kwargs) -> requests.Response:
-        url = f"{self.base_url}{path}"
-        print(f"=== Directum ЗАПРОС: {method} {url} ===", flush=True)
-        
-        # 1. Печатаем параметры и тело, которые передали в kwargs (до отправки)
-        if 'params' in kwargs:
-            print(f"Query Params: {kwargs['params']}", flush=True)
-        if 'json' in kwargs:
-            print(f"JSON Body: {kwargs['json']}", flush=True)
-        if 'data' in kwargs:
-            print(f"Form Data: {kwargs['data']}", flush=True)
-        if 'headers' in kwargs:
-            print(f"Custom Headers: {kwargs['headers']}", flush=True)
-
+        print(f"Directum запрос: {method} {path}", flush=True)
         try:
             response = self.session.request(
                 method,
-                url,
+                f"{self.base_url}{path}",
                 verify=False,
                 timeout=self.timeout,
                 **kwargs,
             )
-            
-            # 2. Печатаем итоговые заголовки, которые ушли на сервер (включая сессионные)
-            print(f"Headers: {response.request.headers}", flush=True)
-            
-            print(f"=== Directum ОТВЕТ: {response.status_code} ===", flush=True)
-            
-            # 3. Печатаем тело ответа (текст или JSON)
-            if response.text:
-                print(f"Response Body (Text):\n{response.text[:1000]}", flush=True) # Ограничим 1000 символов
-            
             response.raise_for_status()
+            if response.text:
+                print(response.text)
+            print(
+                f"Directum ответ: {response.status_code} для {method} {path}",
+                flush=True,
+            )
             return response
-            
         except requests.RequestException as exc:
-            # 4. Логируем ошибку, если запрос упал (например, 401 или 503)
-            print(f"!!! Ошибка запроса !!! Статус: {getattr(exc.response, 'status_code', 'No Status')}", flush=True)
-            if exc.response and exc.response.text:
-                print(f"Текст ошибки от сервера:\n{exc.response.text}", flush=True)
-                
             raise ProcessingError(
                 f"Directum request failed: {method} {path}: {exc}"
             ) from exc
@@ -645,24 +623,3 @@ class DirectumClient:
             f"Задача успешной обработки создана и отправлена, id={task_id}.",
             flush=True,
         )
-
-if __name__ == "__main__":
-    response = requests.post(
-       f"https://rx.uktaif.ru/Integration/odata/IIncomingLetters",
-      json={
-         "Name":f"Test",
-         "Subject":f"Test",
-         "Correspondent@odata.bind":f"https://rx.uktaif.ru/Integration/odata/Counterparties(1700)",
-         "Dated": f"{parser.parse('12.03.2026').date()}",
-         "InNumber":f"12",
-         "SignedBy@odata.bind":f"https://rx.uktaif.ru/Integration/odata/IContacts(13)",
-         "Addressee@odata.bind":f"https://rx.uktaif.ru/Integration/odata/IContacts(13)",
-      
-     },
-       auth=('ulog','pass'),
-
-    verify=False
-    )
-
-    print(f"Статус-код: {response.status_code}")       # Например: 200, 404, 500
-    print(f"Тип контента: {response.headers.get('Content-Type')}")
