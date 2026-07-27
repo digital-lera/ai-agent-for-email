@@ -8,7 +8,7 @@ from typing import Any
 import warnings
 import numpy as np
 import pandas as pd
-
+from dateutil import parser
 import requests
 
 from src.backend.directum_rules import (
@@ -436,10 +436,11 @@ class DirectumClient:
 
         print(f"Входящее письмо создано, id={document_id}", flush=True)
         print(f"Файлов для загрузки в Directum: {len(attachments)}", flush=True)
-        self._upload_attachment(document_id, attachments[0], True)
-        attachments.pop(0)
-        for attachment in attachments:
-            self._upload_attachment(document_id, attachment, False)
+        if len(attachments) > 0:
+            self._upload_attachment(document_id, attachments[0], True)
+            attachments.pop(0)
+            for attachment in attachments:
+                self._upload_attachment(document_id, attachment, False)
 
         review_task_created = bool(self.errors)
         if review_task_created:
@@ -620,3 +621,24 @@ class DirectumClient:
             f"Задача успешной обработки создана и отправлена, id={task_id}.",
             flush=True,
         )
+
+if __name__ == "__main__":
+    response = requests.post(
+       f"https://rx.uktaif.ru/Integration/odata/IIncomingLetters",
+      json={
+         "Name":f"Test",
+         "Subject":f"Test",
+         "Correspondent@odata.bind":f"https://rx.uktaif.ru/Integration/odata/Counterparties(1700)",
+         "Dated": f"{parser.parse('12.03.2026').date()}",
+         "InNumber":f"12",
+         "SignedBy@odata.bind":f"https://rx.uktaif.ru/Integration/odata/IContacts(13)",
+         "Addressee@odata.bind":f"https://rx.uktaif.ru/Integration/odata/IContacts(13)",
+      
+     },
+       auth=('ulog','pass'),
+
+    verify=False
+    )
+
+    print(f"Статус-код: {response.status_code}")       # Например: 200, 404, 500
+    print(f"Тип контента: {response.headers.get('Content-Type')}")
