@@ -133,12 +133,7 @@ class DirectumClient:
             
             # 3. Печатаем тело ответа (текст или JSON)
             if response.text:
-                try:
-                    # Если это JSON, печатаем красиво с отступами
-                    print(f"Response Body (JSON):\n{json.dumps(response.json(), indent=2, ensure_ascii=False)}", flush=True)
-                except ValueError:
-                    # Если это обычный текст/HTML (например, при ошибках 503)
-                    print(f"Response Body (Text):\n{response.text[:1000]}", flush=True) # Ограничим 1000 символов
+                print(f"Response Body (Text):\n{response.text[:1000]}", flush=True) # Ограничим 1000 символов
             
             response.raise_for_status()
             return response
