@@ -114,8 +114,6 @@ class DirectumClient:
                 **kwargs,
             )
             response.raise_for_status()
-            if response.text:
-                print(response.text)
             print(
                 f"Directum ответ: {response.status_code} для {method} {path}",
                 flush=True,
