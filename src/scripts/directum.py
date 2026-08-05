@@ -698,9 +698,6 @@ class DirectumClient:
                 for c in range(2, 5):
                     worksheet.cell(row=r, column=c).border = thin_border
 
-
-        new_letter = ["Новый контракт", "ПАО Газ", "12.05.2026", "19-К", "Петров П.П.", "Бухгалтерия"]
-
         if ws.max_row == 1 and ws.cell(row=1, column=2).value is None:
             current_start_row = 1
         else:
@@ -712,4 +709,4 @@ class DirectumClient:
 
 
         wb.save(FILE_NAME)
-        print("pass!")
+        print(f"Следующие данные добавлены в статистику: письмо номер {letter_reg_number}, поля: {agent_data}")
