@@ -11,8 +11,13 @@ import pandas as pd
 from dateutil import parser
 import requests
 
+import socket
+
+from smb.SMBConnection import SMBConnection
+from nmb.NetBIOS import NetBIOS
+
 import os
-from openpyxl import load_workbook
+from openpyxl import load_workbook, Workbook
 from openpyxl.styles import Alignment, Border, Font, Side
 
 from src.backend.directum_rules import (
@@ -643,18 +648,84 @@ class DirectumClient:
         )
 
     def _add_statistics(self, letter_reg_number: str, agent_data: list[str]) -> None:
-        FILE_NAME = "src/log/mail_statistics.xlsx"
-        
-        if os.path.exists(FILE_NAME):
-            wb = load_workbook(FILE_NAME)
-            ws = wb.active  
-        else:
-            from openpyxl import Workbook
+        # ------------------------------------------------------------------
+        # SMB connection settings
+        # ------------------------------------------------------------------
+        SMB_SERVER_NAME = "fs02"                      # NetBIOS/DNS name, same as smbclient //fs02
+        SMB_CREDENTIALS_FILE = os.path.expanduser("~/.smbcredentials_mail")
 
-            wb = Workbook()
-            ws = wb.active
-            ws.title = "Письма"
+        SMB_SHARE       = "ИИ-агенты"                 # share name from smbclient -L output
+        SMB_REMOTE_DIR  = "Почтовый агент"             # folder inside the share
+        SMB_REMOTE_FILE = "Статистика обработки почты.xlsx"  # actual remote filename
+        SMB_REMOTE_PATH = f"{SMB_REMOTE_DIR}/{SMB_REMOTE_FILE}"
+        SMB_SERVER_IP   = "10.100.40.130"  # from: nmblookup fs02
 
+        # Local working copy
+        LOCAL_PATH = "src/log/mail_statistics.xlsx"
+
+
+        def read_credentials_file(path):
+            """Parses a standard Samba credentials file:
+            username=...
+            password=...
+            domain=...   (optional)
+            """
+            creds = {"username": "", "password": "", "domain": ""}
+            with open(path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith("#") or "=" not in line:
+                        continue
+                    key, value = line.split("=", 1)
+                    key = key.strip().lower()
+                    if key in creds:
+                        creds[key] = value.strip()
+            if not creds["username"] or not creds["password"]:
+                raise ValueError(f"Missing username/password in {path}")
+            return creds
+
+
+        # ------------------------------------------------------------------
+        # SMB helpers
+        # ------------------------------------------------------------------
+
+        def smb_connect():
+            creds = read_credentials_file(SMB_CREDENTIALS_FILE)  # from your existing script
+
+            conn = SMBConnection(
+                creds["username"],
+                creds["password"],
+                socket.gethostname(),
+                SMB_SERVER_NAME,
+                domain=creds["domain"],
+                use_ntlm_v2=True,
+                is_direct_tcp=True,
+            )
+            if not conn.connect(SMB_SERVER_IP, 445, timeout=30):
+                raise ConnectionError(f"Failed to connect to {SMB_SERVER_NAME} ({SMB_SERVER_IP})")
+            return conn
+
+        def download_file(conn):
+            os.makedirs(os.path.dirname(LOCAL_PATH), exist_ok=True)
+            try:
+                with open(LOCAL_PATH, "wb") as f:
+                    conn.retrieveFile(SMB_SHARE, SMB_REMOTE_PATH, f)
+                print("Downloaded remote file to", LOCAL_PATH)
+            except Exception as e:
+                print("No remote file to download (or download failed):", e)
+                if os.path.exists(LOCAL_PATH):
+                    os.remove(LOCAL_PATH)
+
+
+        def upload_file(conn):
+            with open(LOCAL_PATH, "rb") as f:
+                conn.storeFile(SMB_SHARE, SMB_REMOTE_PATH, f)
+            print("Uploaded", LOCAL_PATH, "to", SMB_REMOTE_PATH)
+
+
+        # ------------------------------------------------------------------
+        # Existing openpyxl logic, unchanged
+        # ------------------------------------------------------------------
         labels = [
             "Содержание",
             "Корреспондент",
@@ -664,7 +735,6 @@ class DirectumClient:
             "Адресат",
         ]
 
-        # Стили оформления
         thin_border = Border(
             left=Side(style="thin"),
             right=Side(style="thin"),
@@ -698,15 +768,32 @@ class DirectumClient:
                 for c in range(2, 5):
                     worksheet.cell(row=r, column=c).border = thin_border
 
-        if ws.max_row == 1 and ws.cell(row=1, column=2).value is None:
-            current_start_row = 1
-        else:
 
-            current_start_row = ws.max_row + 1
+        def process_workbook():
+            if os.path.exists(LOCAL_PATH):
+                wb = load_workbook(LOCAL_PATH)
+                ws = wb.active
+            else:
+                wb = Workbook()
+                ws = wb.active
+                ws.title = "Письма"
+
+            if ws.max_row == 1 and ws.cell(row=1, column=2).value is None:
+                current_start_row = 1
+            else:
+                current_start_row = ws.max_row + 1
+
+            add_letter_block(ws, current_start_row, letter_reg_number, agent_data)
+
+            wb.save(LOCAL_PATH)
+            print("Workbook updated locally.")
 
 
-        add_letter_block(ws, current_start_row, letter_reg_number, agent_data)
-
-
-        wb.save(FILE_NAME)
+        conn = smb_connect()
+        try:
+            download_file(conn)
+            process_workbook()
+            upload_file(conn)
+        finally:
+            conn.close()
         print(f"Следующие данные добавлены в статистику: письмо номер {letter_reg_number}, поля: {agent_data}")
