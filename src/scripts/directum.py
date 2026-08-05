@@ -14,7 +14,8 @@ import requests
 import socket
 
 from smb.SMBConnection import SMBConnection
-from nmb.NetBIOS import NetBIOS
+
+from smb.smb_structs import OperationFailure
 
 import os
 from openpyxl import load_workbook, Workbook
@@ -647,22 +648,29 @@ class DirectumClient:
             flush=True,
         )
 
-    def _add_statistics(self, letter_reg_number: str, agent_data: list[str]) -> None:
+    from smb.smb_structs import OperationFailure
+
+
+    def _add_statistics(self, letter_reg_number: str, agent_data: list[str], skip_if_busy: bool = True) -> bool:
+        """
+        Returns True if the statistics file was updated.
+        Returns False (without raising) if the remote file is currently
+        locked/busy (e.g. open in Excel on the Windows side) and skip_if_busy=True.
+        """
         # ------------------------------------------------------------------
         # SMB connection settings
         # ------------------------------------------------------------------
         SMB_SERVER_NAME = "fs02"                      # NetBIOS/DNS name, same as smbclient //fs02
-        SMB_CREDENTIALS_FILE = os.path.expanduser("/app/.smbcredentials_mail")
+        SMB_CREDENTIALS_FILE = "/app/.smbcredentials_mail"
 
         SMB_SHARE       = "ИИ-агенты"                 # share name from smbclient -L output
         SMB_REMOTE_DIR  = "Почтовый агент"             # folder inside the share
         SMB_REMOTE_FILE = "Статистика обработки почты.xlsx"  # actual remote filename
         SMB_REMOTE_PATH = f"{SMB_REMOTE_DIR}/{SMB_REMOTE_FILE}"
-        SMB_SERVER_IP   = "10.100.40.130"  # from: nmblookup fs02
+        SMB_SERVER_IP   = "10.100.40.132"  # from: nmblookup fs02
 
         # Local working copy
         LOCAL_PATH = "src/log/mail_statistics.xlsx"
-
 
         def read_credentials_file(path):
             """Parses a standard Samba credentials file:
@@ -684,13 +692,15 @@ class DirectumClient:
                 raise ValueError(f"Missing username/password in {path}")
             return creds
 
+        def _is_sharing_violation(exc: OperationFailure) -> bool:
+            text = str(exc)
+            return "SHARING_VIOLATION" in text or "ACCESS_DENIED" in text
 
         # ------------------------------------------------------------------
         # SMB helpers
         # ------------------------------------------------------------------
-
         def smb_connect():
-            creds = read_credentials_file(SMB_CREDENTIALS_FILE)  # from your existing script
+            creds = read_credentials_file(SMB_CREDENTIALS_FILE)
 
             conn = SMBConnection(
                 creds["username"],
@@ -706,22 +716,34 @@ class DirectumClient:
             return conn
 
         def download_file(conn):
+            """Returns 'ok', 'missing', or 'busy'."""
             os.makedirs(os.path.dirname(LOCAL_PATH), exist_ok=True)
             try:
                 with open(LOCAL_PATH, "wb") as f:
                     conn.retrieveFile(SMB_SHARE, SMB_REMOTE_PATH, f)
                 print("Downloaded remote file to", LOCAL_PATH)
-            except Exception as e:
+                return "ok"
+            except OperationFailure as e:
+                if _is_sharing_violation(e):
+                    print(f"Remote file is busy (locked), skipping this run: {e}")
+                    return "busy"
                 print("No remote file to download (or download failed):", e)
                 if os.path.exists(LOCAL_PATH):
                     os.remove(LOCAL_PATH)
-
+                return "missing"
 
         def upload_file(conn):
-            with open(LOCAL_PATH, "rb") as f:
-                conn.storeFile(SMB_SHARE, SMB_REMOTE_PATH, f)
-            print("Uploaded", LOCAL_PATH, "to", SMB_REMOTE_PATH)
-
+            """Returns True on success, False if the remote file is busy."""
+            try:
+                with open(LOCAL_PATH, "rb") as f:
+                    conn.storeFile(SMB_SHARE, SMB_REMOTE_PATH, f)
+                print("Uploaded", LOCAL_PATH, "to", SMB_REMOTE_PATH)
+                return True
+            except OperationFailure as e:
+                if _is_sharing_violation(e):
+                    print(f"Remote file became busy before upload, skipping: {e}")
+                    return False
+                raise
 
         # ------------------------------------------------------------------
         # Existing openpyxl logic, unchanged
@@ -743,7 +765,6 @@ class DirectumClient:
         )
         center_align = Alignment(horizontal="center", vertical="center")
         left_align = Alignment(horizontal="left", vertical="center")
-
 
         def add_letter_block(worksheet, start_row, letter_num, values):
             end_row = start_row + 5
@@ -768,7 +789,6 @@ class DirectumClient:
                 for c in range(2, 5):
                     worksheet.cell(row=r, column=c).border = thin_border
 
-
         def process_workbook():
             if os.path.exists(LOCAL_PATH):
                 wb = load_workbook(LOCAL_PATH)
@@ -788,12 +808,19 @@ class DirectumClient:
             wb.save(LOCAL_PATH)
             print("Workbook updated locally.")
 
-
         conn = smb_connect()
         try:
-            download_file(conn)
+            status = download_file(conn)
+            if status == "busy" and skip_if_busy:
+                return False
+
             process_workbook()
-            upload_file(conn)
+
+            uploaded = upload_file(conn)
+            if not uploaded and skip_if_busy:
+                return False
         finally:
             conn.close()
+
         print(f"Следующие данные добавлены в статистику: письмо номер {letter_reg_number}, поля: {agent_data}")
+        return True
