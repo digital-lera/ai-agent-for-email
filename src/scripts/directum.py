@@ -652,7 +652,7 @@ class DirectumClient:
         # SMB connection settings
         # ------------------------------------------------------------------
         SMB_SERVER_NAME = "fs02"                      # NetBIOS/DNS name, same as smbclient //fs02
-        SMB_CREDENTIALS_FILE = os.path.expanduser("~/.smbcredentials_mail")
+        SMB_CREDENTIALS_FILE = os.path.expanduser("/home/ai/.smbcredentials_mail")
 
         SMB_SHARE       = "ИИ-агенты"                 # share name from smbclient -L output
         SMB_REMOTE_DIR  = "Почтовый агент"             # folder inside the share
