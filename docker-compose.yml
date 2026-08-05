@@ -19,6 +19,7 @@ services:
     volumes:
       - .:/app
       - easyocr:/root/.EasyOCR
+      - /home/ai/.smbcredentials_mail:/app/.smbcredentials_mail:ro
     command: "python app.py"
     deploy:
       resources:
