@@ -450,8 +450,8 @@ class DirectumClient:
             data.recipient
         ]
 
-        letter_reg_number_request = self._request("GET", f"/IIncomingLetters({document_id})/Code", json=payload)
-        letter_reg_number = letter_reg_number_request.text
+        letter_reg_number_request = self._request("GET", f"/IIncomingLetters({document_id})", json=payload)
+        letter_reg_number = letter_reg_number_request.json()["RegistrationNumber"]
 
         self._add_statistics(letter_reg_number=letter_reg_number, agent_data=agentic_values)
 
