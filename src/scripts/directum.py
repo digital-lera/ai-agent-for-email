@@ -459,7 +459,10 @@ class DirectumClient:
         letter_reg_number_request = self._request("GET", f"/IIncomingLetters({document_id})", json=payload)
         letter_reg_number = letter_reg_number_request.json()["RegistrationNumber"]
 
-        self._add_statistics(letter_reg_number=letter_reg_number, agent_data=agentic_values)
+        try:
+            self._add_statistics(letter_reg_number=letter_reg_number, agent_data=agentic_values)
+        except:
+            print("Не удалось записать статистику")
 
         print(f"Файлов для загрузки в Directum: {len(attachments)}", flush=True)
         if len(attachments) > 0:
