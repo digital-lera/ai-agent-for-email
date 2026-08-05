@@ -227,3 +227,8 @@ github_actions_key.pub
 github_actions_key
 
 actions-runner/
+src/log/~$mail_statistics.xlsx
+.gitignore
+src/log/.~lock.mail_statistics.xlsx#
+src/log/mail_statistics.xlsx
+test_excel.py

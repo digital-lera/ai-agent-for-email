@@ -11,6 +11,10 @@ import pandas as pd
 from dateutil import parser
 import requests
 
+import os
+from openpyxl import load_workbook
+from openpyxl.styles import Alignment, Border, Font, Side
+
 from src.backend.directum_rules import (
     DirectumIds,
     apply_id_rules,
@@ -435,6 +439,22 @@ class DirectumClient:
             ) from exc
 
         print(f"Входящее письмо создано, id={document_id}", flush=True)
+
+
+        agentic_values = [
+            data.content,
+            data.correspondent,
+            data.date_from,
+            data.number,
+            data.signed_by,
+            data.recipient
+        ]
+
+        letter_reg_number_request = self._request("GET", f"/IIncomingLetters({document_id})/Code", json=payload)
+        letter_reg_number = letter_reg_number_request.text
+
+        self._add_statistics(letter_reg_number=letter_reg_number, agent_data=agentic_values)
+
         print(f"Файлов для загрузки в Directum: {len(attachments)}", flush=True)
         if len(attachments) > 0:
             self._upload_attachment(document_id, attachments[0], True)
@@ -621,3 +641,75 @@ class DirectumClient:
             f"Задача успешной обработки создана и отправлена, id={task_id}.",
             flush=True,
         )
+
+    def _add_statistics(self, letter_reg_number: str, agent_data: list[str]) -> None:
+        FILE_NAME = "src/log/mail_statistics.xlsx"
+        
+        if os.path.exists(FILE_NAME):
+            wb = load_workbook(FILE_NAME)
+            ws = wb.active  
+        else:
+            from openpyxl import Workbook
+
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "Письма"
+
+        labels = [
+            "Содержание",
+            "Корреспондент",
+            "Дата от",
+            "No",
+            "Подписант",
+            "Адресат",
+        ]
+
+        # Стили оформления
+        thin_border = Border(
+            left=Side(style="thin"),
+            right=Side(style="thin"),
+            top=Side(style="thin"),
+            bottom=Side(style="thin"),
+        )
+        center_align = Alignment(horizontal="center", vertical="center")
+        left_align = Alignment(horizontal="left", vertical="center")
+
+
+        def add_letter_block(worksheet, start_row, letter_num, values):
+            end_row = start_row + 5
+
+            cell_num = worksheet.cell(row=start_row, column=2, value=letter_num)
+            cell_num.alignment = center_align
+            cell_num.font = Font(bold=True)
+
+            worksheet.merge_cells(
+                start_row=start_row, start_column=2, end_row=end_row, end_column=2
+            )
+            for i in range(6):
+                current_row = start_row + i
+
+                cell_label = worksheet.cell(row=current_row, column=3, value=labels[i])
+                cell_label.alignment = left_align
+
+                cell_value = worksheet.cell(row=current_row, column=4, value=values[i])
+                cell_value.alignment = left_align
+
+            for r in range(start_row, end_row + 1):
+                for c in range(2, 5):
+                    worksheet.cell(row=r, column=c).border = thin_border
+
+
+        new_letter = ["Новый контракт", "ПАО Газ", "12.05.2026", "19-К", "Петров П.П.", "Бухгалтерия"]
+
+        if ws.max_row == 1 and ws.cell(row=1, column=2).value is None:
+            current_start_row = 1
+        else:
+
+            current_start_row = ws.max_row + 1
+
+
+        add_letter_block(ws, current_start_row, letter_reg_number, agent_data)
+
+
+        wb.save(FILE_NAME)
+        print("pass!")
