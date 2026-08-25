@@ -58,6 +58,26 @@
       ]
     },
     {
+      "name": "Forward resume",
+      "enabled": true,
+      "when": {
+        "text_contains_any": [
+          "резюме"
+        ]
+      },
+      "actions": [
+        {
+          "type": "forward_email",
+          "to": "MikhelAA@taif.ru"
+        },
+        {
+          
+          "type": "skip_directum",
+          "reason": "Письмо содержит резюме"
+        }
+      ]
+    },
+    {
       "name": "Forward gosuslugi penalty for traffic violations",
       "enabled": true,
       "when": {
